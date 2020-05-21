@@ -1,0 +1,10 @@
+apiVersion: v2
+name: api
+description: winget.run rest api
+
+type: application
+
+# chart version
+version: 0.1.0
+# app version
+appVersion: 0.1.0

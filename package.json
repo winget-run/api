@@ -1,0 +1,48 @@
+{
+  "name": "identity",
+  "version": "0.2.0",
+  "description": "view winget packages",
+  "author": {
+    "name": "Feinwaru",
+    "email": "feinwaru@gmail.com",
+    "url": "https://feinwaru.com"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "lint": "yarn eslint . --ext .ts",
+    "lint:fix": "yarn eslint . --ext .ts --fix",
+    "test": "yarn cross-env NODE_ENV=test NODE_PATH=. yarn jest --coverage",
+    "test:watch": "yarn cross-env NODE_ENV=test NODE_PATH=. yarn jest --coverage --watchAll",
+    "view:coverage": "yarn serve coverage/lcov-report",
+    "build": "yarn tsc",
+    "build:watch": "yarn tsc --watch",
+    "run:dev": "yarn cross-env NODE_ENV=dev NODE_PATH=. node -r dotenv/config -r source-map-support/register dist",
+    "run:hot": "yarn cross-env NODE_ENV=dev NODE_PATH=. yarn nodemon -r dotenv/config -r source-map-support/register dist --watch dist --watch .env",
+    "kube:dev": "telepresence --swap-deployment identity --namespace develop --expose 3000 --method inject-tcp --run yarn cross-env NODE_ENV=dev NODE_PATH=. node -r dotenv/config -r source-map-support/register dist",
+    "kube:hot": "telepresence --swap-deployment identity --namespace develop --expose 3000 --method inject-tcp --run yarn cross-env NODE_ENV=dev NODE_PATH=. yarn nodemon -r dotenv/config -r source-map-support/register dist --watch dist --watch .env",
+    "run:prod": "yarn cross-env NODE_ENV=prod NODE_PATH=. node dist",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.2",
+    "fastify": "^2.14.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.2.3",
+    "@types/node": "^14.0.4",
+    "@types/source-map-support": "^0.5.1",
+    "@typescript-eslint/eslint-plugin": "^2.34.0",
+    "@typescript-eslint/parser": "^2.34.0",
+    "dotenv": "^8.2.0",
+    "eslint": "^6.0.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.2",
+    "jest": "^26.0.1",
+    "nodemon": "^2.0.4",
+    "serve": "^11.3.0",
+    "source-map-support": "^0.5.19",
+    "ts-jest": "^26.0.0",
+    "typescript": "^3.9.3"
+  }
+}
