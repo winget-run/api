@@ -1,11 +1,20 @@
 import Fastify, { FastifyInstance } from "fastify";
+import fastifyCors from "fastify-cors";
+
+import routes from "./routes";
+
+const {
+  WEB_ADDRESS,
+} = process.env;
 
 const buildFastify = (settings = {}): FastifyInstance => {
   const fastify = Fastify(settings);
 
-  fastify.get("/", async () => ({
-    nonce: "me, i added the github secrets to the wrong repo lol",
-  }));
+  fastify.register(fastifyCors, {
+    origin: WEB_ADDRESS,
+  });
+
+  fastify.register(routes);
 
   return fastify;
 };

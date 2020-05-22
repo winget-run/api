@@ -1,8 +1,10 @@
 import buildFastify from "./buildFastify";
 
-const WEBSERVER_LOGGER = true;
-const WEBSERVER_PORT = 3000;
-const WEBSERVER_ADDRESS = "0.0.0.0";
+const {
+  WEBSERVER_LOGGER,
+  WEBSERVER_PORT,
+  WEBSERVER_ADDRESS,
+} = process.env;
 
 const startServer = async (): Promise<void> => {
   const server = buildFastify({
