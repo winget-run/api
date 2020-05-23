@@ -14,13 +14,12 @@ import {
 // const clone = rfdc();
 
 // TODO: refactor these into 1 or 2, somehow...
-// TODO: fix the types!!!
 const mapInternalFilters = <T extends IBase>(filters: IBaseFilters<T>): IBaseInternalFilters<T> => {
   // const clonedFilters = clone(filters);
 
   const mappedFilters = {
     ...filters,
-    ...(filters.uuid == null ? {} : { _id: muuid.from(filters.uuid as string) }),
+    ...(filters.uuid == null ? {} : { _id: muuid.from(filters.uuid) }),
     uuid: undefined,
   };
 
@@ -38,7 +37,7 @@ const mapInternalFindOneOptions = <T extends IBase>(options: IBaseFindOneOptions
 
     where: {
       ...options.filters,
-      ...(options.filters?.uuid == null ? {} : { _id: muuid.from(options.filters.uuid as string) }),
+      ...(options.filters?.uuid == null ? {} : { _id: muuid.from(options.filters.uuid) }),
 
       uuid: undefined,
     },
@@ -61,7 +60,7 @@ const mapInternalFindManyOptions = <T extends IBase>(options: IBaseFindManyOptio
 
     where: {
       ...options.filters,
-      ...(options.filters?.uuid == null ? {} : { _id: muuid.from(options.filters.uuid as string) }),
+      ...(options.filters?.uuid == null ? {} : { _id: muuid.from(options.filters.uuid) }),
       uuid: undefined,
     },
   };
