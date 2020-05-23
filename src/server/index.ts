@@ -1,8 +1,10 @@
 import buildFastify from "./buildFastify";
 
-const WEBSERVER_LOGGER = true;
-const WEBSERVER_PORT = 3000;
-const WEBSERVER_ADDRESS = "0.0.0.0";
+const {
+  WEBSERVER_LOGGER,
+  WEBSERVER_PORT,
+  WEBSERVER_ADDRESS,
+} = process.env;
 
 const startServer = async (): Promise<void> => {
   const server = buildFastify({
@@ -10,7 +12,7 @@ const startServer = async (): Promise<void> => {
   });
 
   try {
-    await server.listen(WEBSERVER_PORT, WEBSERVER_ADDRESS);
+    await server.listen(Number.parseInt(WEBSERVER_PORT, 10), WEBSERVER_ADDRESS);
     server.log.info(`winget magic happens on port ${WEBSERVER_PORT}`);
   } catch (error) {
     server.log.error(error);

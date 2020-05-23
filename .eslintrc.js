@@ -29,6 +29,8 @@ module.exports = {
     // doesnt work with typescript stuff
     "no-undef": "off",
     "no-bitwise": "off",
+    // working with mongo _ids
+    "no-underscore-dangle": "off",
   },
   settings: {
     "import/resolver": {
