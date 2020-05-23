@@ -14,25 +14,28 @@ const getManifestFolderPaths = async (): Promise<String[]> => {
     `${CONTENTS_BASE_URL}/manifests`
   ).then((res) => res.json());
 
-  const manifestFolderPaths = manifestFolderList.then((folder) =>
-    folder.map((x) => x.path)
+  const manifestFolderPaths = await (await manifestFolderList).map(
+    (x) => x.path
   );
 
   return manifestFolderPaths;
 };
 
-const getPackageFolderPaths = async (): Promise<String[]> => {
+const getPackageFolderPaths = async (): Promise<string[]> => {
   //! only use for inital bulk import
   //const manifestFolderPaths = await getManifestFolderPaths();
 
   const manifestFolderPaths = ["manifests/7Zip", "manifests/Adobe"];
   const packageFolders: ManifestFolderList[] = await Promise.all(
-    manifestFolderPaths.map((path) =>
-      fetch(`${CONTENTS_BASE_URL}/${path}`).then((res) => res.json())
+    manifestFolderPaths.map((e) =>
+      fetch(`${CONTENTS_BASE_URL}/${e}`).then((res) => res.json())
     )
   );
 
-  const packageFolderPaths = packageFolders.map((folder) => folder.path);
+  const flatPackageFolderPaths: ManifestFolderList[] = packageFolders.flat(
+    packageFolders.length
+  );
+  const packageFolderPaths = flatPackageFolderPaths.map((x) => x.path);
 
   return packageFolderPaths;
 };
@@ -40,31 +43,26 @@ const getPackageFolderPaths = async (): Promise<String[]> => {
 const getPackageDownloadUrls = async (): Promise<string[]> => {
   const packageFolderPaths = await getPackageFolderPaths();
 
-  const flatPackageFolderPaths: ManifestFolderList[] = packageFolderPaths.flat(
-    packageFolderPaths.length
-  );
-  const repoPaths = flatPackageFolderPaths.map((x) => x.path);
-
-  const downloadUrls: ManifestFolderList[] = await Promise.all(
-    repoPaths.map((path) =>
+  const downloadUrlPaths: ManifestFolderList[] = await Promise.all(
+    packageFolderPaths.map((path) =>
       fetch(`${CONTENTS_BASE_URL}/${path}`).then((res) => res.json())
     )
   );
 
-  const flatRawUrls: ManifestFolderList[] = downloadUrls.flat(
-    downloadUrls.length
+  const flatDownloadUrls: ManifestFolderList[] = downloadUrlPaths.flat(
+    downloadUrlPaths.length
   );
 
-  const rawUrls: string[] = flatRawUrls.map((x) => x.download_url);
+  const downloadUrls = flatDownloadUrls.map((url) => url.download_url);
 
-  return rawUrls;
+  return downloadUrls;
 };
 
 const getPackageYamls = async (): Promise<string[]> => {
-  const rawUrls = await getPackageDownloadUrls();
+  const downloadUrls = await getPackageDownloadUrls();
 
   const packageYamls = Promise.all(
-    rawUrls.map((url) =>
+    downloadUrls.map((url) =>
       fetch(url)
         .then((res) => res.text())
         .then((txt) => jsYaml.safeLoad(txt))
