@@ -7,6 +7,21 @@ import { Package } from "./model";
 import { IPackage } from "./types";
 import { PackageService } from "./service";
 
+// patch typeorm MongoDtiver to support mongo 3.6+ tls options
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const MongoDriver = require("typeorm/driver/mongodb/MongoDriver");
+
+const originalFunc = MongoDriver.MongoDriver.prototype.buildConnectionOptions;
+// eslint-disable-next-line func-names
+MongoDriver.MongoDriver.prototype.buildConnectionOptions = function (): object {
+  const mongoOptions = {
+    ...originalFunc.apply(this),
+    ...this.options.extra,
+  };
+
+  return mongoOptions;
+};
+
 const CA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt";
 
 const {
@@ -26,7 +41,6 @@ const connect = async (): Promise<void> => {
     ...(NODE_ENV === "prod" ? { tlsCAFile: CA_PATH } : {}),
   };
 
-  // TODO: patch typeorm MongodbDriver to accept required tls fields
   await createConnection({
     type: "mongodb",
     // needs to be set in the url, if we try to set the 'database' field, it tries to connect to a 'test' db...

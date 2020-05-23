@@ -13,22 +13,23 @@ enum SortOrder {
 // string | anythingElse
 // string | regex | anythingElse
 
+// NOTE: this is as close to sane as i could get it
 type IBaseFilters<T extends IBase> = {
   [P in keyof Omit<T, "_id" | "__v">]?: NonNullable<T[P]> extends string ? T[P] | RegExp : T[P];
-};
+} & { uuid?: string };
+
 type IBaseInternalFilters<T extends IBase> = {
   [P in keyof Omit<T, "uuid" | "__v">]?: NonNullable<T[P]> extends string ? T[P] | RegExp : T[P];
 };
 
-// TODO: make the select type an array
-type IBaseSelect<T extends IBase> = keyof T;
+type IBaseSelect<T extends IBase> = (keyof T)[];
 type IBaseOrder<T extends IBaseFilters<IBase>> = {
   [P in keyof T]?: SortOrder;
 };
 
 interface IBaseFindOneOptions<T extends IBase> {
   filters: IBaseFilters<T>;
-  select?: IBaseSelect<T>[];
+  select?: IBaseSelect<T>;
   order?: IBaseOrder<T>;
 }
 
