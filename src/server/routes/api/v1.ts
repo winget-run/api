@@ -3,13 +3,16 @@ import { FastifyInstance } from "fastify";
 import { ratelimit } from "../../plugins";
 import { PackageService } from "../../../database";
 
+import { request } from "http";
+import ghService from "../../ghService/index";
+
 const DEFAULT_PAGE_SIZE = 12;
 const DEFAULT_AUTOCOMPLETE_SIZE = 3;
 
 // TODO: validation
 export default async (fastify: FastifyInstance): Promise<void> => {
   // TODO: implement
-  fastify.setErrorHandler(async error => ({
+  fastify.setErrorHandler(async (error) => ({
     cunt: `oofie owie i made a fucky-${error}-wucky`,
   }));
 
@@ -17,7 +20,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     nonce: "yes",
   });
 
-  fastify.get("/search", async request => {
+  fastify.get("/search", async (request) => {
     const { query, page = 0 } = request.query;
 
     const pkgService = new PackageService();
@@ -35,7 +38,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  fastify.get("/autocomplete", async request => {
+  fastify.get("/autocomplete", async (request) => {
     const { query } = request.query;
 
     const pkgService = new PackageService();
@@ -58,7 +61,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         },
         take: DEFAULT_AUTOCOMPLETE_SIZE,
       }),
-    ]).then(e => e.flat().filter((f, i, a) => a.findIndex(g => g.uuid === f.uuid) === i));
+    ]).then((e) =>
+      e.flat().filter((f, i, a) => a.findIndex((g) => g.uuid === f.uuid) === i)
+    );
 
     return {
       packages,
@@ -66,7 +71,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // TODO: deal with regex string search
-  fastify.get("/:org", async request => {
+  fastify.get("/:org", async (request) => {
     const { org } = request.params;
     const { page = 0 } = request.query;
 
@@ -85,7 +90,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  fastify.get("/:org/:pkg", async request => {
+  fastify.get("/:org/:pkg", async (request) => {
     const { org, pkg } = request.params;
     const { page = 0 } = request.query;
 
@@ -102,5 +107,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       packages,
       total,
     };
+  });
+
+  //* import yaml endpoint
+  fastify.get("/ghs/import", async (request) => {
+    const yamls = await ghService.initialPackageImport();
+
+    return yamls;
   });
 };

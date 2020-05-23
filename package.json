@@ -23,11 +23,13 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
+    "@types/js-yaml": "^3.12.4",
     "@types/rfdc": "^1.1.0",
     "bson": "^4.0.4",
     "cross-env": "^7.0.2",
     "fastify": "^2.14.1",
     "fastify-cors": "^3.0.3",
+    "js-yaml": "^3.14.0",
     "mongodb": "^3.5.7",
     "node-fetch": "^2.6.0",
     "reflect-metadata": "^0.1.13",
