@@ -14,6 +14,7 @@ const buildFastify = (settings = {}): FastifyInstance => {
     origin: WEB_ADDRESS,
   });
 
+  // TODO: since were using an api subdomain, we dont need the /api part in the url
   fastify.register(routes);
 
   return fastify;

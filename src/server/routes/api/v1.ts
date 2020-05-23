@@ -89,6 +89,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     nonce: "yes",
   });
 
+  // TODO: only send the name, org, and description here
   fastify.get("/search", { schema: searchSchema }, async request => {
     const { query, page = 0 } = request.query;
 
@@ -97,6 +98,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       filters: {
         Name: new RegExp(`.*${query}.*`),
       },
+      select: ["Name", "Publisher", "Description"],
       take: DEFAULT_PAGE_SIZE,
       skip: page * DEFAULT_PAGE_SIZE,
     });
