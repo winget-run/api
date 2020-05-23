@@ -10,7 +10,7 @@ declare namespace NodeJS {
 
     WEB_ADDRESS: string;
     WEBSERVER_LOGGER: string;
-    WEBSERVER_PORT: number;
+    WEBSERVER_PORT: string;
     WEBSERVER_ADDRESS: string;
   }
 }

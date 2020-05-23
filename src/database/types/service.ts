@@ -7,8 +7,20 @@ enum SortOrder {
   DESCENDING = -1,
 }
 
-type IBaseFilters<T extends IBase> = Partial<Omit<T, "_id" | "__v">>;
-type IBaseInternalFilters<T extends IBase> = Partial<Omit<T, "uuid" | "__v">>;
+// type IBaseFilters<T extends IBase> = Partial<Omit<T, "_id" | "__v">>;
+// type IBaseInternalFilters<T extends IBase> = Partial<Omit<T, "uuid" | "__v">>;
+
+// string | anythingElse
+// string | regex | anythingElse
+
+type IBaseFilters<T extends IBase> = {
+  [P in keyof Omit<T, "_id" | "__v">]?: NonNullable<T[P]> extends string ? T[P] | RegExp : T[P];
+};
+type IBaseInternalFilters<T extends IBase> = {
+  [P in keyof Omit<T, "uuid" | "__v">]?: NonNullable<T[P]> extends string ? T[P] | RegExp : T[P];
+};
+
+// TODO: make the select type an array
 type IBaseSelect<T extends IBase> = keyof T;
 type IBaseOrder<T extends IBaseFilters<IBase>> = {
   [P in keyof T]?: SortOrder;

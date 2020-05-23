@@ -12,7 +12,7 @@ const startServer = async (): Promise<void> => {
   });
 
   try {
-    await server.listen(WEBSERVER_PORT, WEBSERVER_ADDRESS);
+    await server.listen(Number.parseInt(WEBSERVER_PORT, 10), WEBSERVER_ADDRESS);
     server.log.info(`winget magic happens on port ${WEBSERVER_PORT}`);
   } catch (error) {
     server.log.error(error);

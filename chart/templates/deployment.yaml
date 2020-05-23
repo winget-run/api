@@ -35,3 +35,41 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
           successThreshold: 1
+        env:
+        - name: MONGO_CERT
+          valueFrom:
+            secretKeyRef:
+              key: MONGO_CERT
+              name: {{ .Release.Name }}
+
+        - name: WEB_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              key: WEB_ADDRESS
+              name: {{ .Release.Name }}
+        - name: WEBSERVER_LOGGER
+          valueFrom:
+            configMapKeyRef:
+              key: WEBSERVER_LOGGER
+              name: {{ .Release.Name }}
+        - name: WEBSERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: WEBSERVER_PORT
+              name: {{ .Release.Name }}
+        - name: WEBSERVER_ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              key: WEBSERVER_ADDRESS
+              name: {{ .Release.Name }}
+
+        - name: MONGO_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: MONGO_HOST
+              name: {{ .Release.Name }}
+        - name: MONGO_DB
+          valueFrom:
+            configMapKeyRef:
+              key: MONGO_DB
+              name: {{ .Release.Name }}
