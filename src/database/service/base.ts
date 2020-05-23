@@ -16,6 +16,7 @@ import {
 } from "../types";
 
 // TODO: handle errors properly
+// TODO: figure out a way to return uuid instead of _id (mongoose equivalent of toObject or whatever)
 abstract class BaseService<T extends BaseModel> {
   protected repository!: MongoRepository<T>
 

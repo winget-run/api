@@ -7,7 +7,7 @@ import { Package } from "./model";
 import { IPackage } from "./types";
 import { PackageService } from "./service";
 
-// patch typeorm MongoDtiver to support mongo 3.6+ tls options
+// patch the typeorm MongoDriver to support mongo 3.6+ tls options
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const MongoDriver = require("typeorm/driver/mongodb/MongoDriver");
 

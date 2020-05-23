@@ -12,5 +12,7 @@ declare namespace NodeJS {
     WEBSERVER_LOGGER: string;
     WEBSERVER_PORT: string;
     WEBSERVER_ADDRESS: string;
+
+    GITHUB_TOKEN: string;
   }
 }
