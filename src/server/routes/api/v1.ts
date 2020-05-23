@@ -3,6 +3,8 @@ import { FastifyInstance } from "fastify";
 import { ratelimit } from "../../plugins";
 import { PackageService } from "../../../database";
 
+import ghService from "../../ghService/index";
+
 const DEFAULT_PAGE_SIZE = 12;
 const DEFAULT_AUTOCOMPLETE_SIZE = 3;
 
@@ -81,12 +83,27 @@ const orgPkgSchema = {
 
 export default async (fastify: FastifyInstance): Promise<void> => {
   // TODO: implement
-  fastify.setErrorHandler(async error => ({
+  fastify.setErrorHandler(async (error) => ({
     cunt: `oofie owie i made a fucky-(${error})-wucky`,
   }));
 
   fastify.register(ratelimit, {
     nonce: "yes",
+  });
+
+  //* import yaml endpoint
+  fastify.get("/ghs/import", async () => {
+    const yamls = await ghService.initialPackageImport();
+    const packageService = new PackageService();
+
+    console.log(yamls);
+
+    const result = await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+    );
+
+    return result;
   });
 
   // TODO: only send the name, org, and description here
@@ -96,9 +113,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const pkgService = new PackageService();
     const [packages, total] = await pkgService.findAndCount({
       filters: {
-        Name: new RegExp(`.*${query}.*`),
+        Name: new RegExp(`.*${query}.*`, "i"),
       },
-      select: ["Name", "Publisher", "Description"],
+      select: ["Id", "Name", "Publisher", "Description"],
       take: DEFAULT_PAGE_SIZE,
       skip: page * DEFAULT_PAGE_SIZE,
     });
@@ -116,23 +133,23 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packages = await Promise.all([
       pkgService.find({
         filters: {
-          Name: new RegExp(`.*${query}.*`),
+          Name: new RegExp(`.*${query}.*`, "i"),
         },
         take: DEFAULT_AUTOCOMPLETE_SIZE,
       }),
       pkgService.find({
         filters: {
-          Publisher: new RegExp(`.*${query}.*`),
+          Publisher: new RegExp(`.*${query}.*`, "i"),
         },
         take: DEFAULT_AUTOCOMPLETE_SIZE,
       }),
       pkgService.find({
         filters: {
-          Description: new RegExp(`.*${query}.*`),
+          Description: new RegExp(`.*${query}.*`, "i"),
         },
         take: DEFAULT_AUTOCOMPLETE_SIZE,
       }),
-    ]).then(e => e.flat().filter((f, i, a) => a.findIndex(g => g.uuid === f.uuid) === i));
+    ]).then((e) => e.flat().filter((f, i, a) => a.findIndex((g) => g.uuid === f.uuid) === i));
 
     return {
       packages,
@@ -146,7 +163,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const pkgService = new PackageService();
     const [packages, total] = await pkgService.findAndCount({
       filters: {
-        Id: new RegExp(`${org}..*`),
+        Id: new RegExp(`${org}..*`, "i"),
       },
       take: DEFAULT_PAGE_SIZE,
       skip: page * DEFAULT_PAGE_SIZE,
@@ -165,7 +182,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const pkgService = new PackageService();
     const [packages, total] = await pkgService.findAndCount({
       filters: {
-        Id: `${org}.${pkg}`,
+        Id: new RegExp(`${org}.${pkg}`, "i"),
       },
       take: DEFAULT_PAGE_SIZE,
       skip: page * DEFAULT_PAGE_SIZE,

@@ -41,6 +41,11 @@ spec:
             secretKeyRef:
               key: MONGO_CERT
               name: {{ .Release.Name }}
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: GITHUB_TOKEN
+              name: {{ .Release.Name }}
 
         - name: WEB_ADDRESS
           valueFrom:
