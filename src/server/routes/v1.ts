@@ -1,10 +1,10 @@
 import { FastifyInstance } from "fastify";
 
-import { ratelimit } from "../../plugins";
-import { PackageService } from "../../../database";
+import { ratelimit } from "../plugins";
+import { PackageService } from "../../database";
 
-import ghService from "../../ghService/index";
-import PackageModel from "../../../database/model/package";
+import ghService from "../ghService/index";
+import PackageModel from "../../database/model/package";
 
 const MIN_PAGE_SIZE = 1;
 const MAX_PAGE_SIZE = 24;
