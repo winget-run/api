@@ -14,5 +14,7 @@ declare namespace NodeJS {
     WEBSERVER_ADDRESS: string;
 
     GITHUB_TOKEN: string;
+    CRON_FREQUENCY: string;
+    UPDATE_ENDPOINT: string;
   }
 }

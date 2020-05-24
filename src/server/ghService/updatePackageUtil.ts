@@ -10,11 +10,16 @@ const COMMITS_BASE_URL =
 const CONTENTS_BASE_URL =
   "https://api.github.com/repos/microsoft/winget-pkgs/contents";
 
-const { GITHUB_TOKEN } = process.env;
+const { GITHUB_TOKEN, CRON_FREQUENCY } = process.env;
 
 const getCommitsMasterTimeRange = async (): Promise<string[]> => {
-  //   const since = new Date().toISOString();
-  //   const until = new Date(new Date().setMinutes(new Date().getMinutes() + 30)).toISOString();
+  const frequency = parseInt(CRON_FREQUENCY.split("/")[1].split(" ")[0]);
+  
+  //! use when in production
+  //const since = new Date().toISOString();
+  //const until = new Date(new Date().setMinutes(new Date().getMinutes() + frequency)).toISOString();
+
+  //TODO remove in production
   const since = "2020-05-22T19:00:00Z";
   const until = "2020-05-22T20:30:00Z";
 
@@ -54,7 +59,9 @@ const getUpdatedFileFath = async (): Promise<string[]> => {
 };
 
 const getPackageDownloadUrls = async (): Promise<string[]> => {
-  const updatedFilePaths = await (await getUpdatedFileFath()).filter(x => x.startsWith("manifests/"))
+  const updatedFilePaths = await (await getUpdatedFileFath()).filter((x) =>
+    x.startsWith("manifests/")
+  );
 
   const packageFileDetails: PackageFileDetails[] = await Promise.all(
     updatedFilePaths.map((path) =>

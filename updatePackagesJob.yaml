@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: updatePackages
 spec:
-  schedule: "*/30 * * * *"
+  schedule: ${{ CRON_FREQUENCY }}
   jobTemplate:
     spec:
       template:
@@ -14,5 +14,5 @@ spec:
             args:
             - /bin/sh
             - -c
-            - curl https://api.winget.run/api/v1/ghs/import
+            - curl ${{ UPDATE_ENDPOINT}}
           restartPolicy: OnFailure
