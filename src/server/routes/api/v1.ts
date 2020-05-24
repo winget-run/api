@@ -106,6 +106,18 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     return result;
   });
 
+  //* update yaml endpoint
+  fastify.get("/ghs/update", async () => {
+    const updateYamls = await ghService.updatePackages();
+    const packageService = new PackageService();
+
+    console.log(updateYamls);
+    //logic for try get & insert / update 
+
+    
+
+  });
+
   // TODO: only send the name, org, and description here
   fastify.get("/search", { schema: searchSchema }, async request => {
     const { query, page = 0 } = request.query;

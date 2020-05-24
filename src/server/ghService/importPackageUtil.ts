@@ -8,8 +8,6 @@ const {
 } = process.env;
 
 const CONTENTS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/contents";
-// const COMMITS_BASE_URL =
-// "https://api.github.com/repos/microsoft/winget-pkgs/commits?ref=master";
 
 //! only call for initial import
 // const getManifestFolderPaths = async (): Promise<string[]> => {
