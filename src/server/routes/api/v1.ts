@@ -115,10 +115,11 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
     console.log(updateYamls);
 
-    await Promise.all(updateYamls.map((yaml) => {
+    await Promise.all(updateYamls.map(async (yaml) => {
       const pkg = JSON.stringify(yaml) as unknown as PackageModel;
-      const pkgExist = packageService.findOneById(pkg.Id);
-      if (pkgExist) {
+      const pkgExist = await packageService.findOneById(pkg.Id);
+
+      if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
         packageService.updateOneById(pkg.Id, pkg);
       } else {
         packageService.insertOne(pkg);
