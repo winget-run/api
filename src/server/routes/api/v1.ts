@@ -4,6 +4,7 @@ import { ratelimit } from "../../plugins";
 import { PackageService } from "../../../database";
 
 import ghService from "../../ghService/index";
+import PackageModel from "../../../database/model/package";
 
 const DEFAULT_PAGE_SIZE = 12;
 const DEFAULT_AUTOCOMPLETE_SIZE = 3;
@@ -103,7 +104,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       yamls.map((yaml) => packageService.insertOne(yaml as any)),
     );
 
-    return result;
+    return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
 
   //* update yaml endpoint
@@ -112,10 +113,18 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     console.log(updateYamls);
-    //logic for try get & insert / update 
 
-    
+    Promise.all(updateYamls.map(yaml => {
+        const pkg = JSON.stringify(yaml) as unknown as PackageModel;
+        const pkgExist = packageService.findOneById(pkg.Id);
+        if(pkgExist){
+            packageService.updateOneById(pkg.Id, pkg);
+        }else{
+            packageService.insertOne(pkg);
+        }
+    }))
 
+    return `${updateYamls.length} updated at ${new Date().toISOString()}`
   });
 
   // TODO: only send the name, org, and description here
