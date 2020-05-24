@@ -99,10 +99,11 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
     console.log(yamls);
 
-    const result = await Promise.all(
+    await Promise.all(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       yamls.map((yaml) => packageService.insertOne(yaml as any)),
     );
+
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
@@ -114,17 +115,18 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
     console.log(updateYamls);
 
-    Promise.all(updateYamls.map(yaml => {
-        const pkg = JSON.stringify(yaml) as unknown as PackageModel;
-        const pkgExist = packageService.findOneById(pkg.Id);
-        if(pkgExist){
-            packageService.updateOneById(pkg.Id, pkg);
-        }else{
-            packageService.insertOne(pkg);
-        }
-    }))
+    await Promise.all(updateYamls.map((yaml) => {
+      const pkg = JSON.stringify(yaml) as unknown as PackageModel;
+      const pkgExist = packageService.findOneById(pkg.Id);
+      if (pkgExist) {
+        packageService.updateOneById(pkg.Id, pkg);
+      } else {
+        packageService.insertOne(pkg);
+      }
+      return null;
+    }));
 
-    return `${updateYamls.length} updated at ${new Date().toISOString()}`
+    return `${updateYamls.length} updated at ${new Date().toISOString()}`;
   });
 
   // TODO: only send the name, org, and description here
