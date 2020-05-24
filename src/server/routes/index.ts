@@ -1,11 +1,11 @@
 import { FastifyInstance } from "fastify";
 
-import api from "./api";
+import v1 from "./v1";
 
 export default async (fastify: FastifyInstance): Promise<void> => {
   fastify.get("/", async () => ({
     nonce: "rawrxd",
   }));
 
-  fastify.register(api, { prefix: "api" });
+  fastify.register(v1, { prefix: "v1" });
 };
