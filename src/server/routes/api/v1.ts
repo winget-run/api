@@ -195,6 +195,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const pkgService = new PackageService();
     const orgPkg = await pkgService.findByPackage(org, pkg, limit, page);
 
-    return orgPkg;
+    return {
+      package: orgPkg,
+    };
   });
 };
