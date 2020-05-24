@@ -5,24 +5,11 @@ import { PackageService } from "../../../database";
 
 import ghService from "../../ghService/index";
 
+const MIN_PAGE_SIZE = 1;
+const MAX_PAGE_SIZE = 24;
 const DEFAULT_PAGE_SIZE = 12;
-const DEFAULT_AUTOCOMPLETE_SIZE = 3;
 
-const searchSchema = {
-  querystring: {
-    type: "object",
-    required: ["query"],
-    properties: {
-      query: {
-        type: "string",
-      },
-      page: {
-        type: "number",
-        nullable: true,
-      },
-    },
-  },
-};
+const DEFAULT_AUTOCOMPLETE_SIZE = 3;
 
 const autocompleteSchema = {
   querystring: {
@@ -31,6 +18,28 @@ const autocompleteSchema = {
     properties: {
       query: {
         type: "string",
+      },
+    },
+  },
+};
+
+const searchSchema = {
+  querystring: {
+    type: "object",
+    required: ["name"],
+    properties: {
+      name: {
+        type: "string",
+      },
+      limit: {
+        type: "number",
+        nullable: true,
+        minimum: MIN_PAGE_SIZE,
+        maximum: MAX_PAGE_SIZE,
+      },
+      page: {
+        type: "number",
+        nullable: true,
       },
     },
   },
@@ -49,6 +58,12 @@ const orgSchema = {
   querystring: {
     type: "object",
     properties: {
+      limit: {
+        type: "number",
+        nullable: true,
+        minimum: MIN_PAGE_SIZE,
+        maximum: MAX_PAGE_SIZE,
+      },
       page: {
         type: "number",
         nullable: true,
@@ -60,7 +75,7 @@ const orgSchema = {
 const orgPkgSchema = {
   params: {
     type: "object",
-    required: ["org"],
+    required: ["org", "pkg"],
     properties: {
       org: {
         type: "string",
@@ -73,6 +88,12 @@ const orgPkgSchema = {
   querystring: {
     type: "object",
     properties: {
+      limit: {
+        type: "number",
+        nullable: true,
+        minimum: MIN_PAGE_SIZE,
+        maximum: MAX_PAGE_SIZE,
+      },
       page: {
         type: "number",
         nullable: true,
@@ -106,19 +127,22 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     return result;
   });
 
-  // TODO: only send the name, org, and description here
-  fastify.get("/search", { schema: searchSchema }, async request => {
-    const { query, page = 0 } = request.query;
+  fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
+    const { query } = request.query;
 
     const pkgService = new PackageService();
-    const [packages, total] = await pkgService.findAndCount({
-      filters: {
-        Name: new RegExp(`.*${query}.*`, "i"),
-      },
-      select: ["Id", "Name", "Publisher", "Description"],
-      take: DEFAULT_PAGE_SIZE,
-      skip: page * DEFAULT_PAGE_SIZE,
-    });
+    const packages = await pkgService.findAutocomplete(query, DEFAULT_AUTOCOMPLETE_SIZE);
+
+    return {
+      packages,
+    };
+  });
+
+  fastify.get("/search", { schema: searchSchema }, async request => {
+    const { name, limit = DEFAULT_PAGE_SIZE, page = 0 } = request.query;
+
+    const pkgService = new PackageService();
+    const [packages, total] = await pkgService.findByName(name, limit, page);
 
     return {
       packages,
@@ -126,48 +150,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
-    const { query } = request.query;
-
-    const pkgService = new PackageService();
-    const packages = await Promise.all([
-      pkgService.find({
-        filters: {
-          Name: new RegExp(`.*${query}.*`, "i"),
-        },
-        take: DEFAULT_AUTOCOMPLETE_SIZE,
-      }),
-      pkgService.find({
-        filters: {
-          Publisher: new RegExp(`.*${query}.*`, "i"),
-        },
-        take: DEFAULT_AUTOCOMPLETE_SIZE,
-      }),
-      pkgService.find({
-        filters: {
-          Description: new RegExp(`.*${query}.*`, "i"),
-        },
-        take: DEFAULT_AUTOCOMPLETE_SIZE,
-      }),
-    ]).then((e) => e.flat().filter((f, i, a) => a.findIndex((g) => g.uuid === f.uuid) === i));
-
-    return {
-      packages,
-    };
-  });
-
   fastify.get("/:org", { schema: orgSchema }, async request => {
-    const { org } = request.params;
+    const { org, limit = DEFAULT_PAGE_SIZE } = request.params;
     const { page = 0 } = request.query;
 
     const pkgService = new PackageService();
-    const [packages, total] = await pkgService.findAndCount({
-      filters: {
-        Id: new RegExp(`${org}..*`, "i"),
-      },
-      take: DEFAULT_PAGE_SIZE,
-      skip: page * DEFAULT_PAGE_SIZE,
-    });
+    const [packages, total] = await pkgService.findByOrg(org, limit, page);
 
     return {
       packages,
@@ -176,21 +164,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   fastify.get("/:org/:pkg", { schema: orgPkgSchema }, async request => {
-    const { org, pkg } = request.params;
+    const { org, pkg, limit = DEFAULT_PAGE_SIZE } = request.params;
     const { page = 0 } = request.query;
 
     const pkgService = new PackageService();
-    const [packages, total] = await pkgService.findAndCount({
-      filters: {
-        Id: new RegExp(`${org}.${pkg}`, "i"),
-      },
-      take: DEFAULT_PAGE_SIZE,
-      skip: page * DEFAULT_PAGE_SIZE,
-    });
+    const orgPkg = await pkgService.findByPackage(org, pkg, limit, page);
 
-    return {
-      packages,
-      total,
-    };
+    return orgPkg;
   });
 };
