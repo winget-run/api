@@ -1,14 +1,19 @@
-import util from "./importPackageUtil";
+import importPackageUtil from "./importPackageUtil";
+import updatePackageUtil from "./updatePackageUtil";
 
 const initialPackageImport = async (): Promise<string[]> => {
-  const packgeFolderPaths = await util.getPackageYamls();
+  const packageYamls = await importPackageUtil.getPackageYamls();
 
-  return packgeFolderPaths;
+  return packageYamls;
 };
 
-// const updatePackages = async () => {};
+const updatePackages = async (): Promise<string[]> => {
+  const updatePackageYamls = await updatePackageUtil.getUpdatedPackageYamls();
+
+  return updatePackageYamls;
+};
 
 export = {
   initialPackageImport,
-  // updatePackages,
+  updatePackages,
 };
