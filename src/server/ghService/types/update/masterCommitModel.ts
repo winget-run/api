@@ -12,7 +12,7 @@ export interface MasterCommit {
     parents:      Parent[];
 }
 
-export interface MasterCommitAuthor {
+ interface MasterCommitAuthor {
     login:               string;
     id:                  number;
     node_id:             string;
@@ -33,7 +33,7 @@ export interface MasterCommitAuthor {
     site_admin:          boolean;
 }
 
-export interface Commit {
+ interface Commit {
     author:        CommitAuthor;
     committer:     CommitAuthor;
     message:       string;
@@ -43,25 +43,25 @@ export interface Commit {
     verification:  Verification;
 }
 
-export interface CommitAuthor {
+ interface CommitAuthor {
     name:  string;
     email: string;
     date:  string;
 }
 
-export interface Tree {
+ interface Tree {
     sha: string;
     url: string;
 }
 
-export interface Verification {
+ interface Verification {
     verified:  boolean;
     reason:    string;
     signature: string;
     payload:   string;
 }
 
-export interface Parent {
+ interface Parent {
     sha:      string;
     url:      string;
     html_url: string;

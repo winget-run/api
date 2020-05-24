@@ -14,7 +14,7 @@ export interface CommitDetails {
     files:        File[];
 }
 
-export interface CommitDetailsAuthor {
+ interface CommitDetailsAuthor {
     login:               string;
     id:                  number;
     node_id:             string;
@@ -35,7 +35,7 @@ export interface CommitDetailsAuthor {
     site_admin:          boolean;
 }
 
-export interface Commit {
+ interface Commit {
     author:        CommitAuthor;
     committer:     CommitAuthor;
     message:       string;
@@ -45,18 +45,18 @@ export interface Commit {
     verification:  Verification;
 }
 
-export interface CommitAuthor {
+ interface CommitAuthor {
     name:  string;
     email: string;
     date:  string;
 }
 
-export interface Tree {
+ interface Tree {
     sha: string;
     url: string;
 }
 
-export interface Verification {
+ interface Verification {
     verified:  boolean;
     reason:    string;
     signature: string;
@@ -76,13 +76,13 @@ export interface File {
     patch:        string;
 }
 
-export interface Parent {
+ interface Parent {
     sha:      string;
     url:      string;
     html_url: string;
 }
 
-export interface Stats {
+ interface Stats {
     total:     number;
     additions: number;
     deletions: number;

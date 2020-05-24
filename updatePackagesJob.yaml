@@ -1,0 +1,18 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: updatePackages
+spec:
+  schedule: "*/30 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: updatePackages
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - curl https://api.winget.run/api/v1/ghs/import
+          restartPolicy: OnFailure

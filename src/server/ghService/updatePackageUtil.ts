@@ -46,6 +46,7 @@ const getUpdatedFileFath = async (): Promise<string[]> => {
   );
 
   const files = commitDetails.map((commitDetail) => commitDetail.files);
+  //@ts-ignore
   const flatFiles: File[] = files.flat(files.length);
   const filePaths = flatFiles.map((file) => file.filename);
 
@@ -53,7 +54,7 @@ const getUpdatedFileFath = async (): Promise<string[]> => {
 };
 
 const getPackageDownloadUrls = async (): Promise<string[]> => {
-  const updatedFilePaths = await getUpdatedFileFath();
+  const updatedFilePaths = await (await getUpdatedFileFath()).filter(x => x.startsWith("manifests/"))
 
   const packageFileDetails: PackageFileDetails[] = await Promise.all(
     updatedFilePaths.map((path) =>
