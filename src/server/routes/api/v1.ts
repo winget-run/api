@@ -132,21 +132,22 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   //* update yaml endpoint
   fastify.get("/ghs/update", async () => {
     const updateYamls = await ghService.updatePackages();
-    const packageService = new PackageService();
 
-    console.log(updateYamls);
+    if (updateYamls.length > 0) {
+      const packageService = new PackageService();
 
-    await Promise.all(updateYamls.map(async (yaml) => {
-      const pkg = JSON.stringify(yaml) as unknown as PackageModel;
-      const pkgExist = await packageService.findOneById(pkg.Id);
+      await Promise.all(updateYamls.map(async (yaml) => {
+        const pkg = JSON.stringify(yaml) as unknown as PackageModel;
+        const pkgExist = await packageService.findOneById(pkg.Id);
 
-      if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
-        packageService.updateOneById(pkg.Id, pkg);
-      } else {
-        packageService.insertOne(pkg);
-      }
-      return null;
-    }));
+        if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
+          packageService.updateOneById(pkg.Id, pkg);
+        } else {
+          packageService.insertOne(pkg);
+        }
+        return null;
+      }));
+    }
 
     return `${updateYamls.length} updated at ${new Date().toISOString()}`;
   });
