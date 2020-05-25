@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}
 data:
-  WEB_ADDRESS: "*"
+  WEB_ADDRESS: "https://winget.run"
   WEBSERVER_LOGGER: "true"
   WEBSERVER_PORT: "3000"
   WEBSERVER_ADDRESS: "0.0.0.0"

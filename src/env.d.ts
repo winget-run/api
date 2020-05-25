@@ -14,7 +14,11 @@ declare namespace NodeJS {
     WEBSERVER_ADDRESS: string;
 
     GITHUB_TOKEN: string;
+    // TODO: these probs dont need to be set here but in a seperate config
+    // that the kube cron job has access to
     CRON_FREQUENCY: string;
     UPDATE_ENDPOINT: string;
+
+    API_ACCESS_TOKEN: string;
   }
 }
