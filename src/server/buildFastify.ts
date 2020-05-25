@@ -10,6 +10,7 @@ const {
 const buildFastify = (settings = {}): FastifyInstance => {
   const fastify = Fastify(settings);
 
+  // TODO: this doesnt work for matt, big thonk
   fastify.register(fastifyCors, {
     origin: WEB_ADDRESS,
   });

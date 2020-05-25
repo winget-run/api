@@ -11,4 +11,4 @@ data:
   MONGO_HOST: mongo-main-0.mongo-service.mongodb.svc.cluster.local,mongo-main-1.mongo-service.mongodb.svc.cluster.local
   MONGO_DB: rawrxd
 
-  CRON_FREQUENCY: {{ .Values.cronjobFrequency }}
+  CRON_FREQUENCY: "{{ .Values.cronjobFrequency }}"
