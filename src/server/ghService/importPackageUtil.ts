@@ -32,7 +32,6 @@ const getPackageFolderPaths = async (): Promise<string[]> => {
   //! only use for inital bulk import
   const manifestFolderPaths = await getManifestFolderPaths();
 
-
   const packageFolders: ManifestFolderList[] = await Promise.all(
     manifestFolderPaths.map((e) => fetch(`${CONTENTS_BASE_URL}/${e}`, {
       headers: {
