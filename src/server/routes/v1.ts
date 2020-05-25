@@ -252,6 +252,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: cache a search for everything response as its probs expensive af
   // TODO: could also make a seperate route which optimises a list all packages type thing
+  // TODO: apparently the date sort isnt working (diff results every time?)
   fastify.get("/search", { schema: searchSchema }, async request => {
     const {
       name,
