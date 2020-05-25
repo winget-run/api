@@ -118,8 +118,6 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const yamls = await ghService.initialPackageImport();
     const packageService = new PackageService();
 
-    console.log(yamls);
-
     await Promise.all(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       yamls.map((yaml) => packageService.insertOne(yaml as any)),

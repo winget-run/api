@@ -1,3 +1,5 @@
+import { TextDecoder } from "util";
+
 import fetch from "node-fetch";
 
 import * as jsYaml from "js-yaml";
@@ -10,35 +12,36 @@ const {
 const CONTENTS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/contents";
 
 //! only call for initial import
-const getManifestFolderPaths = async (): Promise<string[]> => {
-  const manifestFolderList: Promise<ManifestFolderList[]> = await fetch(
-    `${CONTENTS_BASE_URL}/manifests`, {
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
-      },
-    },
-  ).then((res) => res.json());
+// const getManifestFolderPaths = async (): Promise<string[]> => {
+//   const manifestFolderList: Promise<ManifestFolderList[]> = await fetch(
+//     `${CONTENTS_BASE_URL}/manifests`, {
+//       headers: {
+//         Authorization: `token ${GITHUB_TOKEN}`,
+//       },
+//     },
+//   ).then((res) => res.json());
 
-  const manifestFolderPaths = await (await manifestFolderList).map(
-    (x) => x.path,
-  );
+//   const manifestFolderPaths = await (await manifestFolderList).map(
+//     (x) => x.path,
+//   );
 
-  return manifestFolderPaths;
-};
+//   return manifestFolderPaths;
+// };
 
 const getPackageFolderPaths = async (): Promise<string[]> => {
   //! only use for inital bulk import
-  const manifestFolderPaths = await getManifestFolderPaths();
+  // const manifestFolderPaths = await getManifestFolderPaths();
 
-  // const manifestFolderPaths = [
-  //   "manifests/7Zip",
-  //   "manifests/Adobe",
-  //   "manifests/Microsoft",
-  //   "manifests/Discord",
-  //   "manifests/vim",
-  //   "manifests/Zoom",
-  //   "manifests/Anki",
-  // ];
+  const manifestFolderPaths = [
+    // "manifests/7Zip",
+    // "manifests/Adobe",
+    "manifests/Microsoft",
+    // "manifests/Plex",
+    // "manifests/Discord",
+    // "manifests/vim",
+    // "manifests/Zoom",
+    // "manifests/Anki",
+  ];
   const packageFolders: ManifestFolderList[] = await Promise.all(
     manifestFolderPaths.map((e) => fetch(`${CONTENTS_BASE_URL}/${e}`, {
       headers: {
@@ -86,8 +89,23 @@ const getPackageYamls = async (): Promise<string[]> => {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
     })
-      .then((res) => res.text())
-      .then((txt) => jsYaml.safeLoad(txt))),
+      .then(res => res.arrayBuffer())
+      .then(buffer => {
+        const utf8decoder = new TextDecoder("utf-8");
+        const utf16decoder = new TextDecoder("utf-16");
+
+        let res;
+
+        try {
+          const text = utf8decoder.decode(buffer);
+          res = jsYaml.safeLoad(text);
+        } catch (error) {
+          const text = utf16decoder.decode(buffer);
+          res = jsYaml.safeLoad(text);
+        }
+
+        return res;
+      })),
   );
 
   return packageYamls;
