@@ -8,14 +8,13 @@ spec:
     spec:
       template:
         spec:
-          restartPolicy: OnFailure
           containers:
           - name: updatePackages
             image: busybox
             args:
             - /bin/sh
-            - -c
-            - curl -H "xxx-asccess-token : $API_ACCESS_TOKEN" {{ .Values.cronjobEndpoint }}
+            - "-c"
+            - "curl -H \"xxx-asccess-token : $API_ACCESS_TOKEN\" {{ .Values.cronjobEndpoint }}"
             env:
             - name: API_ACCESS_TOKEN
               valueFrom:
