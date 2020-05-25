@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: pkgupdate-{{ .Release.Name }}
 spec:
-  schedule: {{ .Values.cronjobFrequency }}
+  schedule: "{{ .Values.cronjobFrequency }}"
   jobTemplate:
     spec:
       template:
