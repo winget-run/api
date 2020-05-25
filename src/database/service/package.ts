@@ -11,6 +11,8 @@ class PackageService extends BaseService<PackageModel> {
   // TODO: this doesnt return all fields on PakcageModel, reflect that in the typings
   // TODO: also especially the stuff with diff versions is totally unlike the model types lmao
   // TODO: remove the anys
+  // TODO: we shouldnt need the Version toString converstion, this is probably because:
+  // input data is fucked, so fix the input, check why tf our validation didnt work, and remove the conversions
   private async findPackages(filters: IBaseFilters<PackageModel>, take: number, skip = 0): Promise<[PackageModel[], number]> {
     try {
       const internalFilters = mapInternalFilters(filters);
@@ -20,8 +22,131 @@ class PackageService extends BaseService<PackageModel> {
           $match: internalFilters,
         },
         {
+          $addFields: {
+            semver: {
+              $reduce: {
+                input: {
+                  $map: {
+                    input: {
+                      $map: {
+                        // if version has less than 4 parts, set the remaining ones to 0
+                        input: {
+                          $zip: {
+                            inputs: [
+                              {
+                                $split: [
+                                  {
+                                    $convert: {
+                                      input: "$Version",
+                                      to: "string",
+                                    },
+                                  },
+                                  ".",
+                                ],
+                              },
+                              {
+                                $range: [
+                                  0,
+                                  4,
+                                ],
+                              },
+                            ],
+                            useLongestLength: true,
+                          },
+                        },
+                        as: "temp",
+                        in: {
+                          $ifNull: [
+                            {
+                              $arrayElemAt: [
+                                "$$temp",
+                                0,
+                              ],
+                            },
+                            "0",
+                          ],
+                        },
+                      },
+                    },
+                    as: "ver",
+                    in: {
+                      $concat: [
+                        {
+                          // get pad string, then pad each ver
+                          $reduce: {
+                            input: {
+                              $range: [
+                                0,
+                                {
+                                  $subtract: [
+                                    // pad to the longest possible len
+                                    // should be 5 chars per section (https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md)
+                                    // but apparently some peeps think that standards dont apply to them...
+                                    // (https://github.com/microsoft/winget-pkgs/blob/master/manifests/Microsoft/dotnet/5.0.100-preview.4.yaml)
+                                    // what a fucking cunt (also the utf-16 encoding wtf)
+                                    5,
+                                    {
+                                      $strLenCP: {
+                                        $convert: {
+                                          input: "$$ver",
+                                          to: "string",
+                                        },
+                                      },
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                            initialValue: "",
+                            in: {
+                              $concat: [
+                                "$$value",
+                                "0",
+                              ],
+                            },
+                          },
+                        },
+                        "$$ver",
+                      ],
+                    },
+                  },
+                },
+                initialValue: "",
+                // will leave a . at the end but thats fine for our purposes (sorting)
+                in: {
+                  $concat: [
+                    "$$value",
+                    "$$this",
+                    ".",
+                  ],
+                },
+              },
+              // gets the length of the longest part (wont work cos wed need the global longest el len)
+              // not worth the effort and imma assume the shit will follow standards
+              // $max: {
+              //   $map: {
+              //     input: {
+              //       $split: [
+              //         {
+              //           $convert: {
+              //             input: "$Version",
+              //             to: "string",
+              //           },
+              //         },
+              //         ".",
+              //       ],
+              //     },
+              //     in: {
+              //       $strLenCP: "$$this",
+              //     },
+              //   },
+              // },
+            },
+          },
+        },
+        {
           $sort: {
-            Version: -1,
+            semver: -1,
           },
         },
         {
@@ -47,6 +172,9 @@ class PackageService extends BaseService<PackageModel> {
           $unset: [
             "latest._id",
             "latest.Id",
+
+            // temp value used for sorting by version
+            "latest.semver",
           ],
         },
         {
@@ -59,7 +187,7 @@ class PackageService extends BaseService<PackageModel> {
             packages: [
               {
                 $sort: {
-                  _id: 1,
+                  "latest.Name": 1,
                 },
               },
               {
@@ -151,7 +279,7 @@ class PackageService extends BaseService<PackageModel> {
   }
 
   public async findByPackage(org: string, pkg: string, take: number, skip: number): Promise<PackageModel | null> {
-    const [packages] = await this.findPackages({ Id: new RegExp(`${org}\\.${pkg}`, "i") }, take, skip);
+    const [packages] = await this.findPackages({ Id: new RegExp(`^${org}\\.${pkg}$`, "i") }, take, skip);
 
     return packages[0];
   }

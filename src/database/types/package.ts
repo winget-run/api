@@ -2,7 +2,6 @@ import { IBase } from "./base";
 
 // TODO validation and enums
 interface IPackage extends IBase {
-  Description?: string;
   Id: string;
   Name: string;
   AppMoniker?: string;
@@ -13,6 +12,7 @@ interface IPackage extends IBase {
   License?: string;
   LicenseUrl?: string;
   MinOSVersion?: string;
+  Description?: string;
   Homepage?: string;
   Tags?: string;
   FileExtensions?: string;
