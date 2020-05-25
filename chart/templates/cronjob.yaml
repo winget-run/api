@@ -11,7 +11,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: pkgupdate-{{ .Release.Name }}
-            image: busybox
+            image: byrnedo/alpine-curl:0.1.3
             args:
             - /bin/sh
             - "-c"
