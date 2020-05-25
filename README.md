@@ -9,15 +9,15 @@ A Docker image is built for the project in our CI/CD pipeline on the develop, re
 > NOTE: We currently only support x509 MongoDB autnetication with TLS, we will modify this at a later date.
 
 The following environment variabled are required to run the container:
-- **MONGO_HOST:** MongoDB address; ip:port
-- **MONGO_DB:** MongoDB database
-- **MONGO_CERT:** MongoDB x509 certificate
-- **WEB_ADDRESS:** Host address for CORS
-- **WEBSERVER_LOGGER:** Enable logger (boolean)
-- **WEBSERVER_PORT:** Server port
-- **WEBSERVER_ADDRESS:** Server address; x.y.z.w
-- **GITHUB_TOKEN:** GitHub access token
-- **API_ACCESS_TOKEN:** Token for protecting GET /v1/ghs/* routes
+- MONGO_HOST: MongoDB address; ip:port
+- MONGO_DB: MongoDB database
+- MONGO_CERT: MongoDB x509 certificate
+- WEB_ADDRESS: Host address for CORS
+- WEBSERVER_LOGGER: Enable logger (boolean)
+- WEBSERVER_PORT: Server port
+- WEBSERVER_ADDRESS: Server address; x.y.z.w
+- GITHUB_TOKEN: GitHub access token
+- API_ACCESS_TOKEN: Token for protecting GET /v1/ghs/* routes
 
 ## Versioning
 
@@ -181,9 +181,9 @@ Many responses feature fields from the winget manifests, the standards thereof c
 ## Development
 
 Local development requires the following software:
-- **NodeJS**
-- **Yarn**
-- **MongoDB**
+- NodeJS
+- Yarn
+- MongoDB
 
 The environment variables mentioned in the [installation](#Installation) section can be placed in a .env file in root.
 
