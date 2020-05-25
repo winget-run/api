@@ -1,0 +1,24 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: pkgupdate-{{ .Release.Name }}
+spec:
+  schedule: {{ .Values.cronjobFrequency }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: updatePackages
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - curl -H "xxx-asccess-token : $API_ACCESS_TOKEN" {{ .Values.cronjobEndpoint }}
+            env:
+            - name: API_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: API_ACCESS_TOKEN
+                  name: {{ .Release.Name }}
