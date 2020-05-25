@@ -11,19 +11,20 @@ const CONTENTS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/co
 
 const {
   GITHUB_TOKEN,
-  // CRON_FREQUENCY ,
+  CRON_FREQUENCY,
 } = process.env;
 
 const getCommitsMasterTimeRange = async (): Promise<string[]> => {
-  // const frequency = parseInt(CRON_FREQUENCY.split("/")[1].split(" ")[0]);
+  // eslint-disable-next-line radix
+  const frequency = parseInt(CRON_FREQUENCY.split("/")[1].split(" ")[0]);
 
   // ! use when in production
-  // const since = new Date().toISOString();
-  // const until = new Date(new Date().setMinutes(new Date().getMinutes() + frequency)).toISOString();
+  const since = new Date().toISOString();
+  const until = new Date(new Date().setMinutes(new Date().getMinutes() + frequency)).toISOString();
 
   // TODO remove in production
-  const since = "2020-05-22T19:00:00Z";
-  const until = "2020-05-22T20:30:00Z";
+  // const since = "2020-05-22T19:00:00Z";
+  // const until = "2020-05-22T20:30:00Z";
 
   const masterCommits: Promise<MasterCommit[]> = await fetch(
     `${COMMITS_BASE_URL}&&since=${since}&&until=${until}`,
