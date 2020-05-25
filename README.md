@@ -1,6 +1,19 @@
-# winget-run api
+# Winget-run API
 
 The REST API behind [winget.run](https://winget.run), allowing users to search, discover, and install winget packages effortlessly without any third-party programs. Package manifests are periodically fetched from the GitHub API to prevent hitting ratelimits.
+
+## Contents
+- [Installation](#Installation)
+- [Versioning](#Versioning)
+- [Ratelimits](#Ratelimits)
+- [Authentication](#Authentication)
+- [Routes](#Routes)
+- [Development](#Development)
+- [Deployment](#Deployment)
+- [Contributing](#Contributing)
+- [Authors](#Authors)
+- [Acknowledgments](#Acknowledgments)
+- [License](#License)
 
 ## Installation
 
