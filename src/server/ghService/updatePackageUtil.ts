@@ -19,8 +19,8 @@ const getCommitsMasterTimeRange = async (): Promise<string[]> => {
   const frequency = parseInt(CRON_FREQUENCY.split("/")[1].split(" ")[0]);
 
   // ! use when in production
-  const since = new Date().toISOString();
-  const until = new Date(new Date().setMinutes(new Date().getMinutes() + frequency)).toISOString();
+  const since = new Date(new Date().setMinutes(new Date().getMinutes() - frequency)).toISOString();
+  const until = new Date().toISOString();
 
   // TODO remove in production
   // const since = "2020-05-22T19:00:00Z";
