@@ -14,5 +14,5 @@ spec:
             args:
             - /bin/sh
             - -c
-            - curl -H "xxx-asccess-token : ${{ API_ACCESS_TOKEN }}" ${{ UPDATE_ENDPOINT}}
+            - curl -H "xxx-asccess-token : ${{ API_ACCESS_TOKEN }}" ${{ UPDATE_ENDPOINT }}
           restartPolicy: OnFailure
