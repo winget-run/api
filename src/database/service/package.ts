@@ -2,18 +2,29 @@ import { getMongoRepository } from "typeorm";
 
 import BaseService from "./base";
 import PackageModel from "../model/package";
-import { IBaseFilters } from "../types";
+import { IBaseFilters, SortOrder } from "../types";
 import { mapInternalFilters } from "../helpers";
+
+// TODO: move this into a helpers file or something
+// imo its important to call this here rather than in the routes, cant trust anyone using
+// the PackageService api to know that regex needs to be escaped
+// mdn: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+const escapeRegex = (str: string): string => str.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
 
 class PackageService extends BaseService<PackageModel> {
   repository = getMongoRepository(PackageModel);
 
-  // TODO: this doesnt return all fields on PakcageModel, reflect that in the typings
+  // TODO: this doesnt return all fields on PackageModel, reflect that in the typings
   // TODO: also especially the stuff with diff versions is totally unlike the model types lmao
   // TODO: remove the anys
   // TODO: we shouldnt need the Version toString converstion, this is probably because:
   // input data is fucked, so fix the input, check why tf our validation didnt work, and remove the conversions
-  private async findPackages(filters: IBaseFilters<PackageModel>, take: number, skip = 0): Promise<[PackageModel[], number]> {
+  // TODO: sort should not be string, it should be limited to fields on PackageModel
+  // (give or take a few), also make the default a const and move it or make the opts thing an object <--- THIS
+  // TODO: allow multiple field sort
+  // TODO: remove this max len thing
+  // eslint-disable-next-line max-len
+  private async findPackages(filters: IBaseFilters<PackageModel>, take: number, skip = 0, sort = "Name", order = SortOrder.ASCENDING): Promise<[PackageModel[], number]> {
     try {
       const internalFilters = mapInternalFilters(filters);
 
@@ -187,7 +198,7 @@ class PackageService extends BaseService<PackageModel> {
             packages: [
               {
                 $sort: {
-                  "latest.Name": 1,
+                  [`latest.${sort}`]: order,
                 },
               },
               {
@@ -222,9 +233,9 @@ class PackageService extends BaseService<PackageModel> {
       // TODO: remove the any (part of todos from above)
       const results = Promise.all(
         [
-          this.findPackages({ Name: new RegExp(`.*${query}.*`, "i") }, take),
-          this.findPackages({ Publisher: new RegExp(`.*${query}.*`, "i") }, take),
-          this.findPackages({ Description: new RegExp(`.*${query}.*`, "i") }, take),
+          this.findPackages({ Name: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
+          this.findPackages({ Publisher: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
+          this.findPackages({ Description: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
         ],
       ).then(e => e
         .flatMap(f => f[0])
@@ -246,8 +257,9 @@ class PackageService extends BaseService<PackageModel> {
     }
   }
 
-  public async findByName(name: string, take: number, skip: number): Promise<[PackageModel[], number]> {
-    const [packages, total] = await this.findPackages({ Name: new RegExp(`.*${name}.*`, "i") }, take, skip);
+  // TODO: sort should not be string, it should be limited to fields on PackageModel (give or take a few)
+  public async findByName(name: string, take: number, skip: number, sort: string, order: number): Promise<[PackageModel[], number]> {
+    const [packages, total] = await this.findPackages({ Name: new RegExp(`.*${escapeRegex(name)}.*`, "i") }, take, skip, sort, order);
 
     const packageBasicInfo = packages.map((f: any) => ({
       ...f,
@@ -263,7 +275,7 @@ class PackageService extends BaseService<PackageModel> {
   }
 
   public async findByOrg(org: string, take: number, skip: number): Promise<[PackageModel[], number]> {
-    const [packages, total] = await this.findPackages({ Id: new RegExp(`${org}\\..*`, "i") }, take, skip);
+    const [packages, total] = await this.findPackages({ Id: new RegExp(`${escapeRegex(org)}\\..*`, "i") }, take, skip);
 
     const packageBasicInfo = packages.map((f: any) => ({
       ...f,
@@ -279,7 +291,7 @@ class PackageService extends BaseService<PackageModel> {
   }
 
   public async findByPackage(org: string, pkg: string, take: number, skip: number): Promise<PackageModel | null> {
-    const [packages] = await this.findPackages({ Id: new RegExp(`^${org}\\.${pkg}$`, "i") }, take, skip);
+    const [packages] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, take, skip);
 
     return packages[0];
   }

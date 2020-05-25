@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ .Release.Name }}
 spec:
-  replicas: 1
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -45,6 +45,11 @@ spec:
           valueFrom:
             secretKeyRef:
               key: GITHUB_TOKEN
+              name: {{ .Release.Name }}
+        - name: API_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: API_ACCESS_TOKEN
               name: {{ .Release.Name }}
 
         - name: WEB_ADDRESS

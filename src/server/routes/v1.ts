@@ -5,6 +5,10 @@ import { PackageService } from "../../database";
 
 import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
+import { SortOrder } from "../../database/types";
+
+// NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
+// were more or less following it lel
 
 const MIN_PAGE_SIZE = 1;
 const MAX_PAGE_SIZE = 24;
@@ -12,6 +16,13 @@ const DEFAULT_PAGE_SIZE = 12;
 
 const DEFAULT_AUTOCOMPLETE_SIZE = 3;
 
+const {
+  NODE_ENV,
+  API_ACCESS_TOKEN,
+} = process.env;
+
+
+// TODO: split this file up
 const autocompleteSchema = {
   querystring: {
     type: "object",
@@ -31,6 +42,15 @@ const searchSchema = {
     properties: {
       name: {
         type: "string",
+      },
+      sort: {
+        type: "string",
+        // TODO: make every field in PackageModel (give or take a few) sortable
+        enum: ["Name", "updatedAt"],
+      },
+      order: {
+        type: "number",
+        enum: Object.values(SortOrder),
       },
       limit: {
         type: "number",
@@ -53,6 +73,7 @@ const orgSchema = {
     properties: {
       org: {
         type: "string",
+        minLength: 1,
       },
     },
   },
@@ -80,9 +101,11 @@ const orgPkgSchema = {
     properties: {
       org: {
         type: "string",
+        minLength: 1,
       },
       pkg: {
         type: "string",
+        minLength: 1,
       },
     },
   },
@@ -103,18 +126,71 @@ const orgPkgSchema = {
   },
 };
 
+// TODO: move this somewhere else
+enum ApiErrorType {
+  VALIDATION_ERROR = "validation_error",
+  GENERIC_CLIENT_ERROR = "generic_client_error",
+  GENERIC_SERVER_ERROR = "generic_server_error",
+}
+
+interface IApiErrorResponse {
+  error: {
+    type: ApiErrorType;
+    debug?: string;
+    stack?: string;
+  };
+}
+
 export default async (fastify: FastifyInstance): Promise<void> => {
-  // TODO: implement
-  fastify.setErrorHandler(async (error) => ({
-    cunt: `oofie owie i made a fucky-(${error})-wucky`,
-  }));
+  fastify.setErrorHandler(async (error, request, reply): Promise<IApiErrorResponse> => {
+    const [debug, stack] = NODE_ENV === "dev" ? [error.message, error.stack] : [];
+
+    if (error.validation != null) {
+      return {
+        error: {
+          type: ApiErrorType.VALIDATION_ERROR,
+          debug,
+          stack,
+        },
+      };
+    }
+
+    if (reply.res.statusCode.toString().startsWith("4")) {
+      return {
+        error: {
+          type: ApiErrorType.GENERIC_CLIENT_ERROR,
+          debug,
+          stack,
+        },
+      };
+    }
+
+    return {
+      error: {
+        type: ApiErrorType.GENERIC_SERVER_ERROR,
+        debug,
+        stack,
+      },
+    };
+  });
 
   fastify.register(ratelimit, {
     nonce: "yes",
   });
 
+  // TODO: were cheking the header shit in a filthy way rn, make an auth middleware or something
   //* import yaml endpoint
-  fastify.get("/ghs/import", async () => {
+  fastify.get("/ghs/import", async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      return new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      return new Error("forbidden");
+    }
+
     const yamls = await ghService.initialPackageImport();
     const packageService = new PackageService();
 
@@ -123,12 +199,22 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       yamls.map((yaml) => packageService.insertOne(yaml as any)),
     );
 
-
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
 
+  // TODO: same as /ghs/import
   //* update yaml endpoint
-  fastify.get("/ghs/update", async () => {
+  fastify.get("/ghs/update", async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      throw new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      throw new Error("forbidden");
+    }
+
     const updateYamls = await ghService.updatePackages();
 
     if (updateYamls.length > 0) {
@@ -161,11 +247,19 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
+  // TODO: cache a search for everything response as its probs expensive af
+  // TODO: could also make a seperate route which optimises a list all packages type thing
   fastify.get("/search", { schema: searchSchema }, async request => {
-    const { name, limit = DEFAULT_PAGE_SIZE, page = 0 } = request.query;
+    const {
+      name,
+      sort = "Name",
+      order = SortOrder.ASCENDING,
+      limit = DEFAULT_PAGE_SIZE,
+      page = 0,
+    } = request.query;
 
     const pkgService = new PackageService();
-    const [packages, total] = await pkgService.findByName(name, limit, page);
+    const [packages, total] = await pkgService.findByName(name, limit, page, sort, order);
 
     return {
       packages,
