@@ -274,6 +274,7 @@ class PackageService extends BaseService<PackageModel> {
     return [packageBasicInfo, total];
   }
 
+  // TODO: apparently the limit stuff doesnt work here and the package route??? fix
   public async findByOrg(org: string, take: number, skip: number): Promise<[PackageModel[], number]> {
     const [packages, total] = await this.findPackages({ Id: new RegExp(`${escapeRegex(org)}\\..*`, "i") }, take, skip);
 
