@@ -11,12 +11,12 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: pkgupdate-{{ .Release.Name }}
-            image: byrnedo/alpine-curl:0.1.3
+            image: buildpack-deps:curl
             args:
             - /bin/sh
             - "-c"
             - |
-              curl -H "xxx-asccess-token : $API_ACCESS_TOKEN" {{ .Values.cronjobEndpoint }}
+              curl --header "xxx-access-token: $API_ACCESS_TOKEN" --url "{{ .Values.cronjobEndpoint }}"
             env:
             - name: API_ACCESS_TOKEN
               valueFrom:
