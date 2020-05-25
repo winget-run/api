@@ -15,7 +15,8 @@ spec:
             args:
             - /bin/sh
             - "-c"
-            - "curl -H \"xxx-asccess-token : $API_ACCESS_TOKEN\" {{ .Values.cronjobEndpoint }}"
+            - |
+              curl -H "xxx-asccess-token : $API_ACCESS_TOKEN" {{ .Values.cronjobEndpoint }}
             env:
             - name: API_ACCESS_TOKEN
               valueFrom:
