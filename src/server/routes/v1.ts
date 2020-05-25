@@ -61,6 +61,7 @@ const searchSchema = {
       page: {
         type: "number",
         nullable: true,
+        minimum: 0,
       },
     },
   },
@@ -89,6 +90,7 @@ const orgSchema = {
       page: {
         type: "number",
         nullable: true,
+        minimum: 0,
       },
     },
   },
@@ -121,6 +123,7 @@ const orgPkgSchema = {
       page: {
         type: "number",
         nullable: true,
+        minimum: 0,
       },
     },
   },
