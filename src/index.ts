@@ -3,6 +3,7 @@ import "reflect-metadata";
 import { connect } from "./database";
 import { startServer } from "./server";
 
+// TODO: add a way to quickly deploy changes if only the /chart folder changes
 // TODO: make api more flexible - allow passing in of more parameters, like sort, etc, etc (v2?)
 // TODO: go through all db stuff and make sure it works and returns the correct shit
 // TODO: security report fixes
