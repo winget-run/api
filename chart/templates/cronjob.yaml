@@ -8,8 +8,9 @@ spec:
     spec:
       template:
         spec:
+          restartPolicy: OnFailure
           containers:
-          - name: updatePackages
+          - name: pkgupdate-{{ .Release.Name }}
             image: busybox
             args:
             - /bin/sh
