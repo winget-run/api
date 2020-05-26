@@ -83,9 +83,3 @@ spec:
             configMapKeyRef:
               key: MONGO_DB
               name: {{ .Release.Name }}
-
-        - name: CRON_FREQUENCY
-          valueFrom:
-            configMapKeyRef:
-              key: CRON_FREQUENCY
-              name: {{ .Release.Name }}

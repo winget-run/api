@@ -1,2 +1,0 @@
-cronjobFrequency: "*/30 * * * *"
-cronjobEndpoint: "api.winget-run-dev.svc.cluster.local"
