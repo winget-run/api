@@ -129,6 +129,20 @@ const orgPkgSchema = {
   },
 };
 
+const manualPackageUpdateSchema = {
+  querystring: {
+    type: "object",
+    properties: {
+      since: {
+        type: "string",
+      },
+      sort: {
+        until: "string",
+      },
+    },
+  },
+};
+
 // TODO: move this somewhere else
 enum ApiErrorType {
   VALIDATION_ERROR = "validation_error",
@@ -182,7 +196,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // TODO: were cheking the header shit in a filthy way rn, make an auth middleware or something
-  //* import yaml endpoint
+  // *----------------- import package update --------------------
   fastify.get("/ghs/import", async (request, reply) => {
     const accessToken = request.headers["xxx-access-token"];
     if (accessToken == null) {
@@ -206,7 +220,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // TODO: same as /ghs/import
-  //* update yaml endpoint
+  // *----------------- update package update --------------------
   fastify.get("/ghs/update", async (request, reply) => {
     const accessToken = request.headers["xxx-access-token"];
     if (accessToken == null) {
@@ -225,7 +239,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
       await Promise.all(updateYamls.map(async (yaml) => {
         const pkg = JSON.stringify(yaml) as unknown as PackageModel;
-        const pkgExist = await packageService.findOneById(pkg.Id);
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
         if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
           packageService.updateOneById(pkg.Id, pkg);
@@ -237,6 +251,68 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     return `${updateYamls.length} updated at ${new Date().toISOString()}`;
+  });
+
+  // *----------------- manual package import---------------------
+  fastify.post("/ghs/manualImport", async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      return new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      return new Error("forbidden");
+    }
+
+    const manifests = request.body.manifests as string[];
+
+    const yamls = await ghService.manualPackageImport(manifests);
+    const packageService = new PackageService();
+
+    await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+    );
+
+    return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
+  });
+
+  // *----------------- manual package update---------------------
+  fastify.get("/ghs/manualUpdate", { schema: manualPackageUpdateSchema }, async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      throw new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      throw new Error("forbidden");
+    }
+
+    const { since, until } = request.query;
+    const updatedYamls = await ghService.manualPackageUpdate(since, until);
+
+    if (updatedYamls.length > 0) {
+      const packageService = new PackageService();
+      console.log(updatedYamls);
+
+      await Promise.all(updatedYamls.map(async (yaml) => {
+        const pkg = yaml as unknown as PackageModel;
+
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
+        console.log(pkgExist);
+        packageService.insertOne(pkg);
+
+        if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
+          packageService.updateOneById(pkg.Id, pkg);
+        } else {
+          packageService.insertOne(pkg);
+        }
+      }));
+    }
+
+    return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
   });
 
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
