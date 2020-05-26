@@ -20,6 +20,8 @@
     "run:dev": "yarn cross-env NODE_ENV=dev NODE_PATH=. node -r dotenv/config -r source-map-support/register dist",
     "run:hot": "yarn cross-env NODE_ENV=dev NODE_PATH=. yarn nodemon -r dotenv/config -r source-map-support/register dist --watch dist --watch .env",
     "run:prod": "yarn cross-env NODE_ENV=prod NODE_PATH=. node dist",
+    "kube:dev": "telepresence --swap-deployment api --namespace winget-run-dev --expose 3000 --method inject-tcp --run yarn cross-env NODE_ENV=dev NODE_PATH=. node -r dotenv/config -r source-map-support/register dist",
+    "kube:hot": "telepresence --swap-deployment api --namespace winget-run-dev --expose 3000 --method inject-tcp --run yarn cross-env NODE_ENV=dev NODE_PATH=. yarn nodemon -r dotenv/config -r source-map-support/register dist --watch dist --watch .env",
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
