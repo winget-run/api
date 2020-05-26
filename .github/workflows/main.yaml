@@ -85,7 +85,7 @@ jobs:
           docker push docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:latest
   deploy:
     name: Deploy to kubernetes
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/develop'
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -99,4 +99,4 @@ jobs:
       - name: Install helm
         run: curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh
       - name: Update deployment
-        run: helm upgrade ${{ github.event.repository.name }} ./chart --install --atomic --namespace winget-run --kubeconfig=$GITHUB_WORKSPACE/.kubeconfig --set-string sha=${{ github.sha }}
+        run: helm upgrade ${{ github.event.repository.name }} ./chart --install --atomic --namespace winget-run-dev --kubeconfig=$GITHUB_WORKSPACE/.kubeconfig --set-string sha=${{ github.sha }}
