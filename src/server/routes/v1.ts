@@ -1,12 +1,13 @@
 import { FastifyInstance } from "fastify";
 
+import * as _ from "lodash";
 import { ratelimit } from "../plugins";
 import { PackageService } from "../../database";
 
 import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
-import assert from "assert";
+
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -242,12 +243,17 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         const pkg = JSON.stringify(yaml) as unknown as PackageModel;
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
-        if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
-          packageService.updateOneById(pkgExist.uuid, pkg);
+        if (pkgExist !== undefined && pkgExist.Id != null) {
+          const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
+
+          if (!equal) {
+            packageService.updateOneById(pkg.uuid, pkg);
+          }
+
+        // eslint-disable-next-line padded-blocks
         } else {
           packageService.insertOne(pkg);
         }
-        return null;
       }));
     }
 
@@ -299,18 +305,19 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
       await Promise.all(updatedYamls.map(async (yaml) => {
         const pkg = yaml as unknown as PackageModel;
-
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
-        const hjhhhhhhh = assert.deepEqual(pkgExist, pkg);
-        console.log(hjhhhhhhh);
+        if (pkgExist !== undefined && pkgExist.Id != null) {
+          const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
+          if (!equal) {
+            packageService.updateOneById(pkg.uuid, pkg);
+          }
 
-        // if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
-        //   packageService.updateOneById(pkgExist.uuid, pkg);
-        // } else {
-        //   packageService.insertOne(pkg);
-        // }
+        // eslint-disable-next-line padded-blocks
+        } else {
+          packageService.insertOne(pkg);
+        }
       }));
     }
 
