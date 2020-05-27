@@ -6,6 +6,7 @@ import { PackageService } from "../../database";
 import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
+import assert from "assert";
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -242,7 +243,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
         if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
-          packageService.updateOneById(pkg.Id, pkg);
+          packageService.updateOneById(pkgExist.uuid, pkg);
         } else {
           packageService.insertOne(pkg);
         }
@@ -295,20 +296,21 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
     if (updatedYamls.length > 0) {
       const packageService = new PackageService();
-      console.log(updatedYamls);
 
       await Promise.all(updatedYamls.map(async (yaml) => {
         const pkg = yaml as unknown as PackageModel;
 
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
-        console.log(pkgExist);
-        packageService.insertOne(pkg);
 
-        if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
-          packageService.updateOneById(pkg.Id, pkg);
-        } else {
-          packageService.insertOne(pkg);
-        }
+        const hjhhhhhhh = assert.deepEqual(pkgExist, pkg);
+        console.log(hjhhhhhhh);
+
+
+        // if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
+        //   packageService.updateOneById(pkgExist.uuid, pkg);
+        // } else {
+        //   packageService.insertOne(pkg);
+        // }
       }));
     }
 
