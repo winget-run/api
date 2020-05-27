@@ -281,8 +281,6 @@ class PackageService extends BaseService<PackageModel> {
   public async findByOrg(org: string, take: number, skip: number): Promise<[PackageModel[], number]> {
     const [packages, total] = await this.findPackages({ Id: new RegExp(`${escapeRegex(org)}\\..*`, "i") }, take, skip);
 
-    console.log(take);
-
     const packageBasicInfo = packages.map((f: any) => ({
       ...f,
       latest: {
@@ -297,7 +295,7 @@ class PackageService extends BaseService<PackageModel> {
   }
 
   public async findByPackage(org: string, pkg: string): Promise<PackageModel | null> {
-    const [packages] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, take, skip);
+    const [packages] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, 1);
 
     return packages[0];
   }
