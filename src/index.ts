@@ -1,6 +1,18 @@
 import "reflect-metadata";
 
+import fs from "fs";
+
+import dotenv from "dotenv";
+
+// TODO: fix cos we shouldnt need this for kube shite
+process.env = {
+  ...process.env,
+  ...dotenv.parse(fs.readFileSync(".env")),
+};
+
+// eslint-disable-next-line import/first
 import { connect } from "./database";
+// eslint-disable-next-line import/first
 import { startServer } from "./server";
 
 // TODO: add a way to quickly deploy changes if only the /chart folder changes
@@ -14,6 +26,8 @@ import { startServer } from "./server";
 // TODO: migrations?
 // TODO: importance of resilience and proper error handling (were dealing with shitty user uploaded data),
 // nothing should go down if half the shit catches fire
+// TODO: remove createdAt, we dont need it cos we have _id
+// TODO: yarn plug n play
 (async (): Promise<void> => {
   try {
     await connect();

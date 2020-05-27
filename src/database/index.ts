@@ -63,7 +63,7 @@ const connect = async (): Promise<void> => {
     ],
   });
 
-  console.log("connected to mongo");
+  console.log(`connected to mongo; ${MONGO_HOST}/${MONGO_DB}`);
 };
 
 export {

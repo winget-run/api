@@ -113,22 +113,6 @@ const orgPkgSchema = {
       },
     },
   },
-  querystring: {
-    type: "object",
-    properties: {
-      limit: {
-        type: "number",
-        nullable: true,
-        minimum: MIN_PAGE_SIZE,
-        maximum: MAX_PAGE_SIZE,
-      },
-      page: {
-        type: "number",
-        nullable: true,
-        minimum: 0,
-      },
-    },
-  },
 };
 
 const manualPackageUpdateSchema = {
@@ -335,9 +319,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  // TODO: cache a search for everything response as its probs expensive af
+  // TODO: cache a search for everything response as its probs expensive af (optimise in some way anyway)
   // TODO: could also make a seperate route which optimises a list all packages type thing
-  // TODO: apparently the date sort isnt working (diff results every time?)
   fastify.get("/search", { schema: searchSchema }, async request => {
     const {
       name,
@@ -357,8 +340,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   fastify.get("/:org", { schema: orgSchema }, async request => {
-    const { org, limit = DEFAULT_PAGE_SIZE } = request.params;
-    const { page = 0 } = request.query;
+    const { org } = request.params;
+    const { page = 0, limit = DEFAULT_PAGE_SIZE } = request.query;
 
     const pkgService = new PackageService();
     const [packages, total] = await pkgService.findByOrg(org, limit, page);
@@ -370,11 +353,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   fastify.get("/:org/:pkg", { schema: orgPkgSchema }, async request => {
-    const { org, pkg, limit = DEFAULT_PAGE_SIZE } = request.params;
-    const { page = 0 } = request.query;
+    const { org, pkg } = request.params;
 
     const pkgService = new PackageService();
-    const orgPkg = await pkgService.findByPackage(org, pkg, limit, page);
+    const orgPkg = await pkgService.findByPackage(org, pkg);
 
     return {
       package: orgPkg,
