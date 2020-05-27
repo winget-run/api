@@ -179,15 +179,7 @@ class PackageService extends BaseService<PackageModel> {
             latest: "$latest",
           },
         },
-        {
-          $unset: [
-            "latest._id",
-            "latest.Id",
-
-            // temp value used for sorting by version
-            "latest.semver",
-          ],
-        },
+        // get total count of search results
         {
           $facet: {
             total: [
@@ -199,6 +191,7 @@ class PackageService extends BaseService<PackageModel> {
               {
                 $sort: {
                   [`latest.${sort}`]: order,
+                  Id: -1,
                 },
               },
               {
@@ -210,6 +203,17 @@ class PackageService extends BaseService<PackageModel> {
             ],
           },
         },
+        // clean up latest
+        {
+          $unset: [
+            "latest._id",
+            "latest.Id",
+
+            // temp value used for sorting by version
+            "latest.semver",
+          ],
+        },
+        // clean up total
         {
           $unwind: "$total",
         },
@@ -274,7 +278,6 @@ class PackageService extends BaseService<PackageModel> {
     return [packageBasicInfo, total];
   }
 
-  // TODO: apparently the limit stuff doesnt work here and the package route??? fix
   public async findByOrg(org: string, take: number, skip: number): Promise<[PackageModel[], number]> {
     const [packages, total] = await this.findPackages({ Id: new RegExp(`${escapeRegex(org)}\\..*`, "i") }, take, skip);
 
@@ -291,8 +294,8 @@ class PackageService extends BaseService<PackageModel> {
     return [packageBasicInfo, total];
   }
 
-  public async findByPackage(org: string, pkg: string, take: number, skip: number): Promise<PackageModel | null> {
-    const [packages] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, take, skip);
+  public async findByPackage(org: string, pkg: string): Promise<PackageModel | null> {
+    const [packages] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, 1);
 
     return packages[0];
   }

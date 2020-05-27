@@ -1,2 +1,0 @@
-cronjobFrequency: "*/30 * * * *"
-cronjobEndpoint: "https://api.winget.run/v1/ghs/update"

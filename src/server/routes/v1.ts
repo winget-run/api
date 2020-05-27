@@ -1,11 +1,13 @@
 import { FastifyInstance } from "fastify";
 
+import * as _ from "lodash";
 import { ratelimit } from "../plugins";
 import { PackageService } from "../../database";
 
 import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
+
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -111,19 +113,17 @@ const orgPkgSchema = {
       },
     },
   },
+};
+
+const manualPackageUpdateSchema = {
   querystring: {
     type: "object",
     properties: {
-      limit: {
-        type: "number",
-        nullable: true,
-        minimum: MIN_PAGE_SIZE,
-        maximum: MAX_PAGE_SIZE,
+      since: {
+        type: "string",
       },
-      page: {
-        type: "number",
-        nullable: true,
-        minimum: 0,
+      sort: {
+        until: "string",
       },
     },
   },
@@ -182,7 +182,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // TODO: were cheking the header shit in a filthy way rn, make an auth middleware or something
-  //* import yaml endpoint
+  // *----------------- import package update --------------------
   fastify.get("/ghs/import", async (request, reply) => {
     const accessToken = request.headers["xxx-access-token"];
     if (accessToken == null) {
@@ -206,7 +206,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // TODO: same as /ghs/import
-  //* update yaml endpoint
+  // *----------------- update package update --------------------
   fastify.get("/ghs/update", async (request, reply) => {
     const accessToken = request.headers["xxx-access-token"];
     if (accessToken == null) {
@@ -225,18 +225,87 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
       await Promise.all(updateYamls.map(async (yaml) => {
         const pkg = JSON.stringify(yaml) as unknown as PackageModel;
-        const pkgExist = await packageService.findOneById(pkg.Id);
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
-        if (pkgExist?.Id === pkg.Id && pkgExist.Version === pkg.Version) {
-          packageService.updateOneById(pkg.Id, pkg);
+        if (pkgExist !== undefined && pkgExist.Id != null) {
+          const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
+
+          if (!equal) {
+            packageService.updateOneById(pkg.uuid, pkg);
+          }
+
+        // eslint-disable-next-line padded-blocks
         } else {
           packageService.insertOne(pkg);
         }
-        return null;
       }));
     }
 
     return `${updateYamls.length} updated at ${new Date().toISOString()}`;
+  });
+
+  // *----------------- manual package import---------------------
+  fastify.post("/ghs/manualImport", async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      return new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      return new Error("forbidden");
+    }
+
+    const manifests = request.body.manifests as string[];
+
+    const yamls = await ghService.manualPackageImport(manifests);
+    const packageService = new PackageService();
+
+    await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+    );
+
+    return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
+  });
+
+  // *----------------- manual package update---------------------
+  fastify.get("/ghs/manualUpdate", { schema: manualPackageUpdateSchema }, async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      throw new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      throw new Error("forbidden");
+    }
+
+    const { since, until } = request.query;
+    const updatedYamls = await ghService.manualPackageUpdate(since, until);
+
+    if (updatedYamls.length > 0) {
+      const packageService = new PackageService();
+
+      await Promise.all(updatedYamls.map(async (yaml) => {
+        const pkg = yaml as unknown as PackageModel;
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
+
+        if (pkgExist !== undefined && pkgExist.Id != null) {
+          const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
+
+          if (!equal) {
+            packageService.updateOneById(pkg.uuid, pkg);
+          }
+
+        // eslint-disable-next-line padded-blocks
+        } else {
+          packageService.insertOne(pkg);
+        }
+      }));
+    }
+
+    return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
   });
 
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
@@ -250,9 +319,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  // TODO: cache a search for everything response as its probs expensive af
+  // TODO: cache a search for everything response as its probs expensive af (optimise in some way anyway)
   // TODO: could also make a seperate route which optimises a list all packages type thing
-  // TODO: apparently the date sort isnt working (diff results every time?)
   fastify.get("/search", { schema: searchSchema }, async request => {
     const {
       name,
@@ -272,8 +340,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   fastify.get("/:org", { schema: orgSchema }, async request => {
-    const { org, limit = DEFAULT_PAGE_SIZE } = request.params;
-    const { page = 0 } = request.query;
+    const { org } = request.params;
+    const { page = 0, limit = DEFAULT_PAGE_SIZE } = request.query;
 
     const pkgService = new PackageService();
     const [packages, total] = await pkgService.findByOrg(org, limit, page);
@@ -285,11 +353,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   fastify.get("/:org/:pkg", { schema: orgPkgSchema }, async request => {
-    const { org, pkg, limit = DEFAULT_PAGE_SIZE } = request.params;
-    const { page = 0 } = request.query;
+    const { org, pkg } = request.params;
 
     const pkgService = new PackageService();
-    const orgPkg = await pkgService.findByPackage(org, pkg, limit, page);
+    const orgPkg = await pkgService.findByPackage(org, pkg);
 
     return {
       package: orgPkg,

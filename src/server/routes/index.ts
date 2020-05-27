@@ -4,7 +4,7 @@ import v1 from "./v1";
 
 export default async (fastify: FastifyInstance): Promise<void> => {
   fastify.get("/", async () => ({
-    nonce: "rawrxd",
+    nonce: "cunty mcjim",
   }));
 
   fastify.register(v1, { prefix: "v1" });

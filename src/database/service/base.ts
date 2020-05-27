@@ -89,9 +89,11 @@ abstract class BaseService<T extends BaseModel> {
       const internalFilters = mapInternalFilters(options.filters ?? {});
 
       return this.repository.updateMany(internalFilters, {
-        ...options.update,
+        $set: {
+          ...options.update,
 
-        updatedAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       throw new Error(error);
@@ -103,9 +105,11 @@ abstract class BaseService<T extends BaseModel> {
       const internalFilters = mapInternalFilters(options.filters ?? {});
 
       return this.repository.updateOne(internalFilters, {
-        ...options.update,
+        $set: {
+          ...options.update,
 
-        updatedAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       throw new Error(error);
@@ -117,9 +121,11 @@ abstract class BaseService<T extends BaseModel> {
       const internalFilters = mapInternalFilters({ uuid });
 
       return this.repository.updateOne(internalFilters, {
-        ...update,
+        $set: {
+          ...update,
 
-        updatedAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
     } catch (error) {
       throw new Error(error);

@@ -3,17 +3,27 @@
 The REST API behind [winget.run](https://winget.run), allowing users to search, discover, and install winget packages effortlessly without any third-party programs. Package manifests are periodically fetched from the GitHub API to prevent hitting ratelimits.
 
 ## Contents
-- [Installation](#Installation)
-- [Versioning](#Versioning)
-- [Ratelimits](#Ratelimits)
-- [Authentication](#Authentication)
-- [Routes](#Routes)
-- [Development](#Development)
-- [Deployment](#Deployment)
-- [Contributing](#Contributing)
-- [Authors](#Authors)
-- [Acknowledgments](#Acknowledgments)
-- [License](#License)
+- [Winget-run API](#winget-run-api)
+  - [Contents](#contents)
+  - [Installation](#installation)
+  - [Versioning](#versioning)
+  - [Ratelimits](#ratelimits)
+  - [Authentication](#authentication)
+  - [Routes](#routes)
+        - [GET /ghs/import](#get-ghsimport)
+        - [GET /ghs/manualImport](#get-ghsmanualimport)
+        - [GET /ghs/update](#get-ghsupdate)
+        - [GET /ghs/manualUpdate](#get-ghsmanualupdate)
+        - [GET /search](#get-search)
+        - [GET /autocomplete](#get-autocomplete)
+        - [GET /{org}](#get-org)
+        - [GET /{org}/{pkg}](#get-orgpkg)
+  - [Development](#development)
+  - [Deployment](#deployment)
+  - [Contributing](#contributing)
+  - [Authors](#authors)
+  - [Acknowledgments](#acknowledgments)
+  - [License](#license)
 
 ## Installation
 
@@ -65,7 +75,9 @@ Many responses feature fields from the winget manifests, the standards thereof c
   - GET /{org}
   - GET /{org}/{pkg}
   - GET /ghs/import
+  - POST /ghs/manualImport
   - GET /ghs/update
+  - GET /ghs/manualUpdate?since=ISO8601&&until=ISO8601
 
 **Errors:**
 - All error responses are json, structured as follows:
@@ -88,6 +100,18 @@ Many responses feature fields from the winget manifests, the standards thereof c
 - *Success*:
   - Body (string)
 
+##### GET /ghs/manualImport
+- *Description:* Import all packages from the body.
+- *Use cases:*
+  - Used to import packages that may have been missed.
+- *Requirements:*
+  - Headers:
+    - xxx-access-token
+  - Body (json): 
+    - manifests (string[])
+- *Success*:
+  - Body (string)
+
 ##### GET /ghs/update
 - *Description:* Update all current packages and fetch new ones from the GitHub API.
 - *Use cases:*
@@ -95,6 +119,19 @@ Many responses feature fields from the winget manifests, the standards thereof c
 - *Requirements:*
   - Headers:
     - xxx-access-token
+- *Success*:
+  - Body (string)
+
+##### GET /ghs/manualUpdate
+- *Description:* Update all current packages and fetch new ones from the GitHub API between date range.
+- *Use cases:*
+  - Called to sync our database with the winget package repo between two dates.
+- *Requirements:*
+  - Headers:
+    - xxx-access-token
+  - Query:
+    - since (ISO 8601)
+    - until (ISO 8601)
 - *Success*:
   - Body (string)
 

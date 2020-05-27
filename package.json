@@ -1,5 +1,5 @@
 {
-  "name": "identity",
+  "name": "winget-api",
   "version": "0.2.0",
   "description": "view winget packages",
   "author": {
@@ -20,14 +20,20 @@
     "run:dev": "yarn cross-env NODE_ENV=dev NODE_PATH=. node -r dotenv/config -r source-map-support/register dist",
     "run:hot": "yarn cross-env NODE_ENV=dev NODE_PATH=. yarn nodemon -r dotenv/config -r source-map-support/register dist --watch dist --watch .env",
     "run:prod": "yarn cross-env NODE_ENV=prod NODE_PATH=. node dist",
+    "kube:dev": "telepresence --swap-deployment api --namespace winget-run-dev --expose 3000 --method inject-tcp --run yarn cross-env NODE_ENV=dev NODE_PATH=. node -r dotenv/config -r source-map-support/register dist",
+    "kube:hot": "telepresence --swap-deployment api --namespace winget-run-dev --expose 3000 --method inject-tcp --run yarn cross-env NODE_ENV=dev NODE_PATH=. yarn nodemon -r dotenv/config -r source-map-support/register dist --watch dist --watch .env",
+    "kube:cunt": "telepresence --swap-deployment api --namespace winget-run-dev --expose 3000 --run yarn cross-env NODE_ENV=dev NODE_PATH=. yarn nodemon -r dotenv/config -r source-map-support/register dist --watch dist --watch .env",
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.153",
     "bson": "^4.0.4",
     "cross-env": "^7.0.2",
+    "dotenv": "^8.2.0",
     "fastify": "^2.14.1",
     "fastify-cors": "^3.0.3",
     "js-yaml": "^3.14.0",
+    "lodash": "^4.17.15",
     "mongodb": "^3.5.7",
     "node-fetch": "^2.6.0",
     "reflect-metadata": "^0.1.13",
@@ -36,6 +42,7 @@
   },
   "devDependencies": {
     "@types/bson": "^4.0.2",
+    "@types/dotenv": "^8.2.0",
     "@types/jest": "^25.2.3",
     "@types/js-yaml": "^3.12.4",
     "@types/mongodb": "^3.5.18",
@@ -44,7 +51,6 @@
     "@types/source-map-support": "^0.5.1",
     "@typescript-eslint/eslint-plugin": "^2.34.0",
     "@typescript-eslint/parser": "^2.34.0",
-    "dotenv": "^8.2.0",
     "eslint": "^6.0.0",
     "eslint-config-airbnb-base": "^14.1.0",
     "eslint-plugin-import": "^2.20.2",
