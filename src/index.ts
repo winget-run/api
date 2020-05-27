@@ -4,11 +4,13 @@ import fs from "fs";
 
 import dotenv from "dotenv";
 
-// TODO: fix cos we shouldnt need this for kube shite
-process.env = {
-  ...process.env,
-  ...dotenv.parse(fs.readFileSync(".env")),
-};
+if (process.env.NODE_ENV === "dev") {
+  // TODO: fix cos we shouldnt need this for kube shite
+  process.env = {
+    ...process.env,
+    ...dotenv.parse(fs.readFileSync(".env")),
+  };
+}
 
 // eslint-disable-next-line import/first
 import { connect } from "./database";
