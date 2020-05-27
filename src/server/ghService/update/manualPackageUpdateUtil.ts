@@ -1,9 +1,9 @@
 import fetch from "node-fetch";
 import * as jsYaml from "js-yaml";
 import { TextDecoder } from "util";
-import { MasterCommit } from "./types/update/masterCommitModel";
-import { CommitDetails, File } from "./types/update/commitDetailsModel";
-import { PackageFileDetails } from "./types/update/packageFileDetailsModel";
+import { MasterCommit } from "../types/update/masterCommitModel";
+import { CommitDetails, File } from "../types/update/commitDetailsModel";
+import { PackageFileDetails } from "../types/update/packageFileDetailsModel";
 
 
 const COMMITS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/commits?ref=master";
@@ -11,21 +11,9 @@ const CONTENTS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/co
 
 const {
   GITHUB_TOKEN,
-  CRON_FREQUENCY,
 } = process.env;
 
-const getCommitsMasterTimeRange = async (): Promise<string[]> => {
-  // eslint-disable-next-line radix
-  const frequency = parseInt(CRON_FREQUENCY.split("/")[1].split(" ")[0]);
-
-  // ! use when in production
-  const since = new Date(new Date().setMinutes(new Date().getMinutes() - frequency)).toISOString();
-  const until = new Date().toISOString();
-
-  // TODO remove in production
-  // const since = "2020-05-22T19:00:00Z";
-  // const until = "2020-05-22T20:30:00Z";
-
+const getCommitsMasterTimeRange = async (since: Date, until: Date): Promise<string[]> => {
   const masterCommits: Promise<MasterCommit[]> = await fetch(
     `${COMMITS_BASE_URL}&&since=${since}&&until=${until}`,
     {
@@ -40,8 +28,8 @@ const getCommitsMasterTimeRange = async (): Promise<string[]> => {
   return commitUrls;
 };
 
-const getUpdatedFileFath = async (): Promise<string[]> => {
-  const commitUrls = await getCommitsMasterTimeRange();
+const getUpdatedFileFath = async (since: Date, until: Date): Promise<string[]> => {
+  const commitUrls = await getCommitsMasterTimeRange(since, until);
 
   const commitDetails: CommitDetails[] = await Promise.all(
     commitUrls.map((commitUrl) => fetch(commitUrl, {
@@ -60,8 +48,8 @@ const getUpdatedFileFath = async (): Promise<string[]> => {
   return filePaths;
 };
 
-const getPackageDownloadUrls = async (): Promise<string[]> => {
-  const updatedFilePaths = await (await getUpdatedFileFath()).filter((x) => x.startsWith("manifests/"));
+const getPackageDownloadUrls = async (since: Date, until: Date): Promise<string[]> => {
+  const updatedFilePaths = await (await getUpdatedFileFath(since, until)).filter((x) => x.startsWith("manifests/"));
 
   const packageFileDetails: PackageFileDetails[] = await Promise.all(
     updatedFilePaths.map((path) => fetch(`${CONTENTS_BASE_URL}/${path}`, {
@@ -76,8 +64,8 @@ const getPackageDownloadUrls = async (): Promise<string[]> => {
   return downloadUrls;
 };
 
-const getUpdatedPackageYamls = async (): Promise<string[]> => {
-  const downloadUrls = await (await getPackageDownloadUrls()).filter(
+const getUpdatedPackageYamls = async (since: Date, until: Date): Promise<string[]> => {
+  const downloadUrls = await (await getPackageDownloadUrls(since, until)).filter(
     (url) => url != null,
   );
 

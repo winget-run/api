@@ -15,6 +15,7 @@ declare namespace NodeJS {
 
     GITHUB_TOKEN: string;
     CRON_FREQUENCY: string;
+    UPDATE_FREQUENCY_MINUTES: string;
 
     API_ACCESS_TOKEN: string;
   }
