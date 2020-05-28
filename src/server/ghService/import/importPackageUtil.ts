@@ -49,6 +49,19 @@ const getPackageFolderPaths = async (): Promise<string[]> => {
   return packageFolderPaths;
 };
 
+// for people like mongo who cant read the docs
+const handleThreeLevelDeep = async (path: string): Promise<string> => {
+  const downloadUrlPath: ManifestFolderList[] = await fetch(`${CONTENTS_BASE_URL}/${path}`, {
+    headers: {
+      Authorization: `token ${GITHUB_TOKEN}`,
+    },
+  }).then(res => res.json());
+
+  const downloadUrl = downloadUrlPath[0].download_url;
+
+  return downloadUrl;
+};
+
 const getPackageDownloadUrls = async (): Promise<string[]> => {
   const packageFolderPaths = await getPackageFolderPaths();
 
@@ -64,7 +77,19 @@ const getPackageDownloadUrls = async (): Promise<string[]> => {
     downloadUrlPaths.length,
   );
 
-  const downloadUrls = flatDownloadUrls.map((url) => url.download_url);
+  const downloadUrls: string[] = [];
+
+  // check if it has three levels
+  // eslint-disable-next-line no-plusplus
+  for (let i = 0; i < flatDownloadUrls.length; i++) {
+    if (flatDownloadUrls[i].download_url == null) {
+      // eslint-disable-next-line no-await-in-loop
+      const url: string = await handleThreeLevelDeep(flatDownloadUrls[i].path);
+      downloadUrls.push(url);
+    } else {
+      downloadUrls.push(flatDownloadUrls[i].download_url);
+    }
+  }
 
   return downloadUrls;
 };
