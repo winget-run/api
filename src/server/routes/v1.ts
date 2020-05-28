@@ -115,6 +115,7 @@ const orgPkgSchema = {
   },
 };
 
+// TODO: make sure this schema is ok (required fields?)
 const manualPackageUpdateSchema = {
   querystring: {
     type: "object",
@@ -337,6 +338,25 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     return {
       packages,
       total,
+    };
+  });
+
+  // TODO: make it so the filters field is not required
+  fastify.get("/list", async () => {
+    const pkgService = new PackageService();
+
+    // TODO: cant deselect _id, maybe add that opt to the service
+    const list = (await pkgService.find({
+      filters: {},
+      select: [
+        "Id",
+        "updatedAt",
+      ],
+    })).map(e => ({ Id: e.Id, updatedAt: e.updatedAt }));
+
+    return {
+      // remove dupes (diff version manifests)
+      list: list.filter((f, i, a) => a.findIndex(g => g.Id === f.Id) === i),
     };
   });
 
