@@ -10,7 +10,7 @@ const initialPackageImport = async (): Promise<string[]> => {
 };
 
 const manualPackageImport = async (manifests: string[]): Promise<string[]> => {
-  const importedYaml = await manualPackageImportUtil.getPackageYamls(manifests);
+  const importedYaml = await manualPackageImportUtil.getPackageDownloadUrls(manifests);
   return importedYaml;
 };
 

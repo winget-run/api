@@ -261,11 +261,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const yamls = await ghService.manualPackageImport(manifests);
     const packageService = new PackageService();
 
-    await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
-    );
+    // await Promise.all(
+    //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    //   yamls.map((yaml) => packageService.insertOne(yaml as any)),
+    // );
 
+    return yamls;
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
 
