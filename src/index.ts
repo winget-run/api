@@ -30,6 +30,8 @@ import { startServer } from "./server";
 // nothing should go down if half the shit catches fire
 // TODO: remove createdAt, we dont need it cos we have _id
 // TODO: yarn plug n play
+// TODO: restrict access to dev-*.winget.run !important;
+// TODO: a script/cron job? which mirrors prod -> dev db
 (async (): Promise<void> => {
   try {
     await connect();

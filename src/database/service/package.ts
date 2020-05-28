@@ -204,6 +204,7 @@ class PackageService extends BaseService<PackageModel> {
           },
         },
         // clean up latest
+        // TODO: these dont actually get deleted
         {
           $unset: [
             "latest._id",
@@ -279,7 +280,7 @@ class PackageService extends BaseService<PackageModel> {
   }
 
   public async findByOrg(org: string, take: number, skip: number): Promise<[PackageModel[], number]> {
-    const [packages, total] = await this.findPackages({ Id: new RegExp(`${escapeRegex(org)}\\..*`, "i") }, take, skip);
+    const [packages, total] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\..*`, "i") }, take, skip);
 
     const packageBasicInfo = packages.map((f: any) => ({
       ...f,
