@@ -224,7 +224,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       const packageService = new PackageService();
 
       await Promise.all(updateYamls.map(async (yaml) => {
-        const pkg = JSON.stringify(yaml) as unknown as PackageModel;
+        const pkg = yaml as unknown as PackageModel;
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
         if (pkgExist !== undefined && pkgExist.Id != null) {
@@ -289,6 +289,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
       await Promise.all(updatedYamls.map(async (yaml) => {
         const pkg = yaml as unknown as PackageModel;
+
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
         if (pkgExist !== undefined && pkgExist.Id != null) {
