@@ -12,20 +12,6 @@ const {
 
 const CONTENTS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/contents";
 
-// to handle people who can't follwo the docs, not pointing any fingers => MongoDB
-const handleThreeLevelFolders = async (manifest: ManifestFolderList): Promise<string> => {
-  const downloadUrlPath: ManifestFolderList[] = await fetch(`${CONTENTS_BASE_URL}/${manifest.path}`, {
-    headers: {
-      Authorization: `token ${GITHUB_TOKEN}`,
-    },
-  }).then(res => res.json());
-
-  const downloadUrl: string = downloadUrlPath[0].download_url;
-  console.log(`${downloadUrl} - DL`);
-
-  return downloadUrl;
-};
-
 //! only call for initial import
 const getManifestFolderPaths = async (manifests: string[]): Promise<string[]> => {
   const manifestFolderPaths = manifests;
@@ -52,6 +38,19 @@ const getPackageFolderPaths = async (manifests: string[]): Promise<string[]> => 
   return packageFolderPaths;
 };
 
+// for people like mongo who cant read the docs
+const handleThreeLevelDeep = async (path: string): Promise<string> => {
+  const downloadUrlPath: ManifestFolderList[] = await fetch(`${CONTENTS_BASE_URL}/${path}`, {
+    headers: {
+      Authorization: `token ${GITHUB_TOKEN}`,
+    },
+  }).then(res => res.json());
+
+  const downloadUrl = downloadUrlPath[0].download_url;
+
+  return downloadUrl;
+};
+
 
 const getPackageDownloadUrls = async (manifests: string[]): Promise<string[]> => {
   const packageFolderPaths = await getPackageFolderPaths(manifests);
@@ -69,16 +68,16 @@ const getPackageDownloadUrls = async (manifests: string[]): Promise<string[]> =>
   const downloadUrls: string[] = [];
 
   // check if it has three levels
-  flatDownloadUrls.forEach(async element => {
-    // eslint-disable-next-line no-empty
-    if (element.download_url == null) {
-      const url = await handleThreeLevelFolders(element);
-      console.log(`${url} - DL`);
+  // eslint-disable-next-line no-plusplus
+  for (let i = 0; i < flatDownloadUrls.length; i++) {
+    if (flatDownloadUrls[i].download_url == null) {
+      // eslint-disable-next-line no-await-in-loop
+      const url: string = await handleThreeLevelDeep(flatDownloadUrls[i].path);
       downloadUrls.push(url);
     } else {
-      downloadUrls.push(element.download_url);
+      downloadUrls.push(flatDownloadUrls[i].download_url);
     }
-  });
+  }
 
   return downloadUrls;
 };
@@ -115,5 +114,5 @@ const getPackageYamls = async (manifests: string[]): Promise<string[]> => {
 };
 
 export = {
-  getPackageDownloadUrls,
+  getPackageYamls,
 };
