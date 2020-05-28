@@ -32,6 +32,9 @@ import { startServer } from "./server";
 // TODO: yarn plug n play
 // TODO: restrict access to dev-*.winget.run !important;
 // TODO: a script/cron job? which mirrors prod -> dev db
+// TODO: make it so more than 1 person can use telepresence at once
+// TODO: when we restrict dev, make it always run on NODE_ENV=dev
+// TODO: make a public devops repo (minus secrets), and a separate secrets repo, also clean up the devops shite!
 (async (): Promise<void> => {
   try {
     await connect();

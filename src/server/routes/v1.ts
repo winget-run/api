@@ -356,7 +356,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
     return {
       // remove dupes (diff version manifests)
-      list: [...(new Set(list))],
+      list: list.filter((f, i, a) => a.findIndex(g => g.Id === f.Id) === i),
     };
   });
 
