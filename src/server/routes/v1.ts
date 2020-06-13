@@ -333,6 +333,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
+  // TODO REMOVE ----------------- test package import---------------------
+  fastify.get("/ghs/testImport", async (request, reply) => {
+    const result = await ghService.testImport();
+
+    return result;
+  });
+
   // TODO: cache a search for everything response as its probs expensive af (optimise in some way anyway)
   // TODO: could also make a seperate route which optimises a list all packages type thing
   fastify.get("/search", { schema: searchSchema }, async request => {
