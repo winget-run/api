@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
-import * as jsYaml from "js-yaml";
-import { TextDecoder } from "util";
+import parseYaml from "../helpers/decodingHelper";
+
 import { MasterCommit } from "../types/update/masterCommitModel";
 import { CommitDetails, File } from "../types/update/commitDetailsModel";
 import { PackageFileDetails } from "../types/update/packageFileDetailsModel";
@@ -84,20 +84,9 @@ const getUpdatedPackageYamls = async (): Promise<string[]> => {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
     })
-      .then(res => res.arrayBuffer())
-      .then(buffer => {
-        const utf8decoder = new TextDecoder("utf-8");
-        const utf16decoder = new TextDecoder("utf-16");
-
-        let res;
-
-        try {
-          const text = utf8decoder.decode(buffer);
-          res = jsYaml.safeLoad(text);
-        } catch (error) {
-          const text = utf16decoder.decode(buffer);
-          res = jsYaml.safeLoad(text);
-        }
+      .then(res => res.buffer())
+      .then(buf => {
+        const res = parseYaml.parsePackageYaml(buf);
 
         return res;
       })),
