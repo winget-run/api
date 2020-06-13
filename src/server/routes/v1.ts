@@ -201,7 +201,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     await Promise.all(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       yamls.map((yaml) => packageService.insertOne(yaml as any)),
-    );
+    ).catch(err => request.log.error(err));
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
@@ -224,22 +224,28 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     if (updateYamls.length > 0) {
       const packageService = new PackageService();
 
-      await Promise.all(updateYamls.map(async (yaml) => {
-        const pkg = yaml as unknown as PackageModel;
+      for (let i = 0; i < updateYamls.length; i += 1) {
+        const pkg = updateYamls[i] as unknown as PackageModel;
+        // eslint-disable-next-line no-await-in-loop
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
         if (pkgExist !== undefined && pkgExist.Id != null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
-
           if (!equal) {
-            packageService.updateOneById(pkg.uuid, pkg);
+            try {
+              packageService.updateOneById(pkg.uuid, pkg);
+            } catch (error) {
+              request.log.error(error);
+            }
+          } else {
+            try {
+              packageService.insertOne(pkg);
+            } catch (error) {
+              request.log.error(error);
+            }
           }
-
-        // eslint-disable-next-line padded-blocks
-        } else {
-          packageService.insertOne(pkg);
         }
-      }));
+      }
     }
 
     return `${updateYamls.length} updated at ${new Date().toISOString()}`;
@@ -265,7 +271,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     await Promise.all(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       yamls.map((yaml) => packageService.insertOne(yaml as any)),
-    );
+    ).catch(err => request.log.error(err));
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
@@ -288,23 +294,29 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     if (updatedYamls.length > 0) {
       const packageService = new PackageService();
 
-      await Promise.all(updatedYamls.map(async (yaml) => {
-        const pkg = yaml as unknown as PackageModel;
-
+      for (let i = 0; i < updatedYamls.length; i += 1) {
+        const pkg = updatedYamls[i] as unknown as PackageModel;
+        // eslint-disable-next-line no-await-in-loop
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
         if (pkgExist !== undefined && pkgExist.Id != null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
-            packageService.updateOneById(pkg.uuid, pkg);
+            try {
+              packageService.insertOne(pkg);
+            } catch (error) {
+              request.log.error(error);
+            }
+          } else {
+            try {
+              packageService.insertOne(pkg);
+            } catch (error) {
+              request.log.error(error);
+            }
           }
-
-        // eslint-disable-next-line padded-blocks
-        } else {
-          packageService.insertOne(pkg);
         }
-      }));
+      }
     }
 
     return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
