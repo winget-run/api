@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { BatchImport, Item } from "../types/import/batchImportModel";
 
-import parseYaml from '../helpers/decodingHelper';
+import parseYaml from "../helpers/decodingHelper";
 
 const {
   GITHUB_TOKEN,
@@ -49,7 +49,7 @@ const getPackgeUrls = async (): Promise<string[]> => {
 };
 
 const getPackageYamls = async (): Promise<string[]> => {
-   const packageUrls = await getPackgeUrls();
+  const packageUrls = await getPackgeUrls();
 
   const packageYamls = Promise.all(
     packageUrls.map((url) => fetch(url, {
@@ -66,7 +66,7 @@ const getPackageYamls = async (): Promise<string[]> => {
       })),
   );
 
-  
+
   return packageYamls;
 };
 
