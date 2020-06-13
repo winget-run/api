@@ -1,9 +1,7 @@
-import {TextDecoder} from 'util';
+import { TextDecoder } from "util";
 import encoding from "encoding-japanese";
 
 import * as jsYaml from "js-yaml";
-import { parse } from 'querystring';
-
 
 // converts encoding.js returned enocding to one understood by node
 // need to handle utf-32, binary, unicode, and auto specially
@@ -24,24 +22,24 @@ const encodingTable = {
 };
 
 const parsePackageYaml = async (buf: Buffer): Promise<string> => {
-    const detected = encodingTable[encoding.detect(buf)];
+  const detected = encodingTable[encoding.detect(buf)];
 
-    if (["utf-32", "binary", "unicode", "auto"].includes(detected)) {
-      console.log(`unsupported encoding: ${detected}`);
-    }
+  if (["utf-32", "binary", "unicode", "auto"].includes(detected)) {
+    console.log(`unsupported encoding: ${detected}`);
+  }
 
-    const decoder = new TextDecoder(detected);
-    const text = decoder.decode(buf);
+  const decoder = new TextDecoder(detected);
+  const text = decoder.decode(buf);
 
-    let parsedYaml;
+  let parsedYaml;
 
-    try {
-      parsedYaml = jsYaml.safeLoad(text);
-    } catch (error) {
-      console.log(error);
-    }
-    return parsedYaml;
-}
+  try {
+    parsedYaml = jsYaml.safeLoad(text);
+  } catch (error) {
+    console.log(error);
+  }
+  return parsedYaml;
+};
 
 export = {
   parsePackageYaml,
