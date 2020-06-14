@@ -201,8 +201,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+      yamls.map(async yaml => {
+        const pkg = yaml as unknown as PackageModel;
+        pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+
+        packageService.insertOne(pkg);
+      }),
     );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
@@ -234,11 +238,11 @@ export default async (fastify: FastifyInstance): Promise<void> => {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
+            pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
             packageService.updateOneById(pkg.uuid, pkg);
           }
-
-        // eslint-disable-next-line padded-blocks
         } else {
+          pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
           packageService.insertOne(pkg);
         }
       }));
@@ -265,8 +269,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+      yamls.map(async yaml => {
+        const pkg = yaml as unknown as PackageModel;
+        pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+
+        packageService.insertOne(pkg);
+      }),
     );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
@@ -299,24 +307,17 @@ export default async (fastify: FastifyInstance): Promise<void> => {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
+            pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
             packageService.updateOneById(pkg.uuid, pkg);
           }
-
-        // eslint-disable-next-line padded-blocks
         } else {
+          pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
           packageService.insertOne(pkg);
         }
       }));
     }
 
     return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
-  });
-
-  // TODO ryan - remove after testng
-  fastify.get("/favicon", async request => {
-    const url = "https://www.microsoft.com/en-us/edge";
-
-    return imageHelper.getFavicon(url);
   });
 
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
