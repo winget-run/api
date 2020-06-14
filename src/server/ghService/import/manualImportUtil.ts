@@ -1,6 +1,6 @@
 
 import fetch from "node-fetch";
-import parseYaml from "../helpers/decodingHelper";
+import { parsePackageYaml } from "../helpers/decodingHelper";
 
 import { ManifestFolderList } from "../types/import/manifestFolderListModel";
 
@@ -93,7 +93,7 @@ const getPackageYamls = async (manifests: string[]): Promise<string[]> => {
     })
       .then(res => res.buffer())
       .then(buf => {
-        const res = parseYaml.parsePackageYaml(buf);
+        const res = parsePackageYaml(buf);
 
         return res;
       })),

@@ -52,7 +52,7 @@ interface IPackage extends IBase {
       LicenseUrl?: string;
     }
   ];
-  Favico?: string;
+  Favicon?: string;
 }
 
 export {

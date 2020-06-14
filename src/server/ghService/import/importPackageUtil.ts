@@ -1,36 +1,34 @@
 import fetch from "node-fetch";
 import { BatchImport, Item } from "../types/import/batchImportModel";
 
-import parseYaml from "../helpers/decodingHelper";
+import { parsePackageYaml } from "../helpers/decodingHelper";
 
 const {
   GITHUB_TOKEN,
 } = process.env;
 
 const BASE_URL = "https://api.github.com/search/code?q=extension:yaml+repo:microsoft/winget-pkgs+path:/manifests";
-const TAKE = "100";
+const TAKE = 100;
 
-let PAGECOUNT: number;
-
-const getPageCount = async (): Promise<void> => {
+const getPageCount = async (): Promise<number> => {
   const model: BatchImport = await fetch(`${BASE_URL}&page=0&per_page=1`, {
     headers: {
       Authorization: `token ${GITHUB_TOKEN}`,
     },
   }).then(res => res.json());
   const totalCount = model.total_count;
-  const pageCount = Math.ceil(totalCount / parseInt(TAKE, 10));
+  const pageCount = Math.ceil(totalCount / TAKE);
 
-  PAGECOUNT = pageCount;
+  return pageCount;
 };
 
 const getPackgeUrls = async (): Promise<string[]> => {
   // set page count
-  await getPageCount();
+  const pageCount = await getPageCount();
 
   let yamlUrls: string[] = [];
 
-  for (let page = 0; page <= PAGECOUNT; page += 1) {
+  for (let page = 1; page <= pageCount; page += 1) {
     // eslint-disable-next-line no-await-in-loop
     const model: BatchImport = await fetch(`${BASE_URL}&page=${page}&per_page=${TAKE}`, {
       headers: {
@@ -60,7 +58,7 @@ const getPackageYamls = async (): Promise<string[]> => {
     })
       .then(res => res.buffer())
       .then(buf => {
-        const res = parseYaml.parsePackageYaml(buf);
+        const res = parsePackageYaml(buf);
 
         return res;
       })),

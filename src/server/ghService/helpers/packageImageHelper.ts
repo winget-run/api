@@ -1,10 +1,9 @@
-import { isNullOrUndefined } from "util";
-
-import fetch from "node-fetch";
 import { URL } from "url";
 
+import fetch from "node-fetch";
+
 const getFavicon = async (url?: string): Promise<string> => {
-  if (isNullOrUndefined(url) || url === "") {
+  if (url == null || url === "") {
     const favicon = await fetch("http://winget.run/favicon.ico")
       .then(res => res.buffer())
       .then(buf => buf.toString("base64"));

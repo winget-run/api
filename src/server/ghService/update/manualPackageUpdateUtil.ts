@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import parseYaml from "../helpers/decodingHelper";
+import { parsePackageYaml } from "../helpers/decodingHelper";
 
 import { MasterCommit } from "../types/update/masterCommitModel";
 import { CommitDetails, File } from "../types/update/commitDetailsModel";
@@ -77,7 +77,7 @@ const getUpdatedPackageYamls = async (since: Date, until: Date): Promise<string[
     })
       .then(res => res.buffer())
       .then(buf => {
-        const res = parseYaml.parsePackageYaml(buf);
+        const res = parsePackageYaml(buf);
 
         return res;
       })),

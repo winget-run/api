@@ -22,25 +22,26 @@ const encodingTable = {
 };
 
 const parsePackageYaml = async (buf: Buffer): Promise<string> => {
-  const detected = encodingTable[encoding.detect(buf)];
-
-  if (["utf-32", "binary", "unicode", "auto"].includes(detected)) {
-    console.log(`unsupported encoding: ${detected}`);
-  }
-
-  const decoder = new TextDecoder(detected);
-  const text = decoder.decode(buf);
-
   let parsedYaml;
 
   try {
+    const detected = encodingTable[encoding.detect(buf)];
+    if (["utf-32", "binary", "unicode", "auto"].includes(detected)) {
+      console.log(`unsupported encoding: ${detected}`);
+    }
+    const decoder = new TextDecoder(detected);
+
+    const text = decoder.decode(buf);
+
     parsedYaml = jsYaml.safeLoad(text);
   } catch (error) {
     console.log(error);
   }
+
   return parsedYaml;
 };
 
-export = {
+export {
+  // eslint-disable-next-line import/prefer-default-export
   parsePackageYaml,
-}
+};
