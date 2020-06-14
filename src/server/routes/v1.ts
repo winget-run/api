@@ -238,10 +238,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         if (pkgExist !== undefined && pkgExist.Id != null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
           if (!equal) {
+            // eslint-disable-next-line no-await-in-loop
             pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
             packageService.updateOneById(pkg.uuid, pkg);
           }
         } else {
+          // eslint-disable-next-line no-await-in-loop
           pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
           packageService.insertOne(pkg);
         }
@@ -307,10 +309,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
+            // eslint-disable-next-line no-await-in-loop
             pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
             packageService.updateOneById(pkg.uuid, pkg);
           }
         } else {
+          // eslint-disable-next-line no-await-in-loop
           pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
           packageService.insertOne(pkg);
         }
