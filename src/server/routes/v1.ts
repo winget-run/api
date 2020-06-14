@@ -8,6 +8,8 @@ import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
 
+import imageHelper from "../ghService/helpers/packageImageHelper";
+
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -308,6 +310,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
+  });
+
+  // TODO ryan - remove after testng
+  fastify.get("/favicon", async request => {
+    const url = "https://www.microsoft.com/en-us/edge";
+
+    return imageHelper.getFavicon(url);
   });
 
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
