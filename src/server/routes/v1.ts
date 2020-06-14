@@ -8,6 +8,8 @@ import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
 
+import imageHelper from "../ghService/helpers/packageImageHelper";
+
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -199,9 +201,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
-    ).catch(err => request.log.error(err));
+      yamls.map(async yaml => {
+        const pkg = yaml as unknown as PackageModel;
+        pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+
+        packageService.insertOne(pkg);
+      }),
+    );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
@@ -232,18 +238,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         if (pkgExist !== undefined && pkgExist.Id != null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
           if (!equal) {
-            try {
-              packageService.updateOneById(pkg.uuid, pkg);
-            } catch (error) {
-              request.log.error(error);
-            }
-          } else {
-            try {
-              packageService.insertOne(pkg);
-            } catch (error) {
-              request.log.error(error);
-            }
+            pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+            packageService.updateOneById(pkg.uuid, pkg);
           }
+        } else {
+          pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+          packageService.insertOne(pkg);
         }
       }
     }
@@ -269,9 +269,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
-    ).catch(err => request.log.error(err));
+      yamls.map(async yaml => {
+        const pkg = yaml as unknown as PackageModel;
+        pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+
+        packageService.insertOne(pkg);
+      }),
+    );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
   });
@@ -303,18 +307,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
-            try {
-              packageService.insertOne(pkg);
-            } catch (error) {
-              request.log.error(error);
-            }
-          } else {
-            try {
-              packageService.insertOne(pkg);
-            } catch (error) {
-              request.log.error(error);
-            }
+            pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+            packageService.updateOneById(pkg.uuid, pkg);
           }
+        } else {
+          pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+          packageService.insertOne(pkg);
         }
       }
     }

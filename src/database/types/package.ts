@@ -52,6 +52,7 @@ interface IPackage extends IBase {
       LicenseUrl?: string;
     }
   ];
+  Favicon?: string;
 }
 
 export {
