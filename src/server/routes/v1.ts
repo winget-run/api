@@ -324,6 +324,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
   });
 
+
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
     const { query } = request.query;
 
