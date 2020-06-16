@@ -253,6 +253,7 @@ class PackageService extends BaseService<PackageModel> {
             Name: f.latest.Name,
             Publisher: f.latest.Publisher,
             Description: f.latest.Description,
+            Favicon: f.latest.Favicon,
           },
         })));
 
@@ -273,6 +274,7 @@ class PackageService extends BaseService<PackageModel> {
         Name: f.latest.Name,
         Publisher: f.latest.Publisher,
         Description: f.latest.Description,
+        Favicon: f.latest.Favicon,
       },
     }));
 
@@ -289,6 +291,7 @@ class PackageService extends BaseService<PackageModel> {
         Name: f.latest.Name,
         Publisher: f.latest.Publisher,
         Description: f.latest.Description,
+        Favicon: f.latest.Favicon,
       },
     }));
 

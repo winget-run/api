@@ -1,21 +1,22 @@
 import "reflect-metadata";
 
-import fs from "fs";
+// import fs from "fs";
 
-import dotenv from "dotenv";
-
-if (process.env.NODE_ENV === "dev") {
-  // TODO: fix cos we shouldnt need this for kube shite
-  process.env = {
-    ...process.env,
-    ...dotenv.parse(fs.readFileSync(".env")),
-  };
-}
+// import dotenv from "dotenv";
 
 // eslint-disable-next-line import/first
 import { connect } from "./database";
 // eslint-disable-next-line import/first
 import { startServer } from "./server";
+
+// if (process.env.NODE_ENV === "dev") {
+//   // TODO: fix cos we shouldnt need this for kube shite
+//   process.env = {
+//     ...process.env,
+//     ...dotenv.parse(fs.readFileSync(".env")),
+//   };
+// }
+//
 
 // TODO: add a way to quickly deploy changes if only the /chart folder changes
 // TODO: make api more flexible - allow passing in of more parameters, like sort, etc, etc (v2?)
@@ -35,6 +36,10 @@ import { startServer } from "./server";
 // TODO: make it so more than 1 person can use telepresence at once
 // TODO: when we restrict dev, make it always run on NODE_ENV=dev
 // TODO: make a public devops repo (minus secrets), and a separate secrets repo, also clean up the devops shite!
+// TODO: look into helm testing
+// TODO: (actually a manifest issue) this shouldnt be a 500 https://winget.run/pkg/Abacus/classic.abacus.ch
+
+// TODO: rename ci/cd github actions workflow to be consistent across repos
 (async (): Promise<void> => {
   try {
     await connect();
@@ -44,3 +49,11 @@ import { startServer } from "./server";
     process.exit(-1);
   }
 })();
+
+// TODO: testing
+// unit
+// integration
+// regression
+// e2e
+
+// TODO: allow access to test db

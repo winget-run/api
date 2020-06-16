@@ -5,6 +5,7 @@ coverage
 telepresence.log
 yarn-error.log
 secret.yaml
+regcred.yaml
 *.pem
 *.pub
 temp
