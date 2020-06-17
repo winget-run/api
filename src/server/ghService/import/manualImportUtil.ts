@@ -65,12 +65,11 @@ const getPackageDownloadUrls = async (manifests: string[]): Promise<string[]> =>
     downloadUrlPaths.length,
   );
 
-  const downloadUrls = flatDownloadUrls.map((url) => url.download_url);
+  const downloadUrls: string[] = [];
 
   // check if it has three levels
-  // eslint-disable-next-line no-plusplus
-  for (let i = 0; i < flatDownloadUrls.length; i++) {
-    if (flatDownloadUrls[i].download_url == null) {
+  for (let i = 0; i < flatDownloadUrls.length; i += 1) {
+    if (flatDownloadUrls[i].download_url === null) {
       // eslint-disable-next-line no-await-in-loop
       const url: string = await handleThreeLevelDeep(flatDownloadUrls[i].path);
       downloadUrls.push(url);

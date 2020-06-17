@@ -8,7 +8,7 @@ import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
 
-import imageHelper from "../ghService/helpers/packageImageHelper";
+// import imageHelper from "../ghService/helpers/packageImageHelper";
 
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
@@ -203,7 +203,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     await Promise.all(
       yamls.map(async yaml => {
         const pkg = yaml as unknown as PackageModel;
-        pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+        //! shite be broke AF, commented out to ya know work
+        // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
 
         packageService.insertOne(pkg);
       }),
@@ -235,16 +236,18 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         // eslint-disable-next-line no-await-in-loop
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
-        if (pkgExist !== undefined && pkgExist.Id != null) {
+        if (pkgExist !== undefined && pkgExist.Id !== null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
           if (!equal) {
             // eslint-disable-next-line no-await-in-loop
-            pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+            //! shite be broke AF, commented out to ya know work
+            // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
             packageService.updateOneById(pkg.uuid, pkg);
           }
         } else {
           // eslint-disable-next-line no-await-in-loop
-          pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+          //! shite be broke AF, commented out to ya know work
+          // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
           packageService.insertOne(pkg);
         }
       }
@@ -273,7 +276,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     await Promise.all(
       yamls.map(async yaml => {
         const pkg = yaml as unknown as PackageModel;
-        pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+        //! shite be broke AF, commented out to ya know work
+        // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
 
         packageService.insertOne(pkg);
       }),
@@ -310,12 +314,16 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
           if (!equal) {
             // eslint-disable-next-line no-await-in-loop
-            pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+            //! shite be broke AF, commented out to ya know work
+            // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+
             packageService.updateOneById(pkg.uuid, pkg);
           }
         } else {
           // eslint-disable-next-line no-await-in-loop
-          pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+          //! shite be broke AF, commented out to ya know work
+          // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
+
           packageService.insertOne(pkg);
         }
       }
