@@ -12,13 +12,8 @@ const getFallbackFavicon = async (): Promise<string> => {
   return favicon;
 };
 
-const getFavicon = async (url?: string): Promise<string> => {
-  // bad url get fallback
-  if (url == null || url === "") {
-    const favicon = await getFallbackFavicon();
-    return favicon;
-  }
-
+// some sites have there websites not as just host.blah
+const paraseHomepageUrl = async (url: string): Promise<string> => {
   // parse out host, so no microsoft.com/en-us/edge
   let { host } = new URL(url);
 
@@ -27,6 +22,19 @@ const getFavicon = async (url?: string): Promise<string> => {
   } else {
     host = `http://${host}`;
   }
+
+  return host;
+};
+
+const getFavicon = async (url?: string): Promise<string> => {
+  // bad url get fallback
+  if (url == null || url === "") {
+    const favicon = await getFallbackFavicon();
+    return favicon;
+  }
+
+
+  const host = await paraseHomepageUrl(url);
 
   // parse html to get <link> with rel icon
   let faviconLink: string | undefined = "";
@@ -52,6 +60,14 @@ const getFavicon = async (url?: string): Promise<string> => {
 
   // get favicon
   const favicon = await fetch(`${host}/${faviconLink}`)
+    .then(async res => {
+      const resUrl = await paraseHomepageUrl(res.url);
+      if (resUrl !== host) {
+        const updatedRes = await fetch(`${resUrl}/${faviconLink}`);
+        return updatedRes;
+      }
+      return res;
+    })
     .then(res => res.buffer())
     .then(buf => buf.toString("base64"));
 
