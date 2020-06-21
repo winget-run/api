@@ -14,6 +14,7 @@ The REST API behind [winget.run](https://winget.run), allowing users to search, 
         - [GET /ghs/manualImport](#get-ghsmanualimport)
         - [GET /ghs/update](#get-ghsupdate)
         - [GET /ghs/manualUpdate](#get-ghsmanualupdate)
+      - [POST /ghs/imageOverride](#post-ghsimageoverride)
         - [GET /search](#get-search)
         - [GET /autocomplete](#get-autocomplete)
         - [GET /{org}](#get-org)
@@ -132,6 +133,19 @@ Many responses feature fields from the winget manifests, the standards thereof c
   - Query:
     - since (ISO 8601)
     - until (ISO 8601)
+- *Success*:
+  - Body (string)
+
+#### POST /ghs/imageOverride
+- *Description:* Add an image url to override the frond end request
+- *Use cases* 
+  - Used where the package does not have a homepage url or of the image looks bad eg. githubs on a dark theme
+ - *Requirements:*
+    - Headers:
+      - xxx-access-token
+    - Body (josn):
+      - pkgId: string
+      - iconUrl: string
 - *Success*:
   - Body (string)
 
