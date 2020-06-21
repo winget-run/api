@@ -8,9 +8,6 @@ import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
 
-// import imageHelper from "../ghService/helpers/packageImageHelper";
-
-
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
 
@@ -203,9 +200,6 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     await Promise.all(
       yamls.map(async yaml => {
         const pkg = yaml as unknown as PackageModel;
-        //! shite be broke AF, commented out to ya know work
-        // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
-
         packageService.insertOne(pkg);
       }),
     );
@@ -239,15 +233,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         if (pkgExist !== undefined && pkgExist.Id !== null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
           if (!equal) {
-            // eslint-disable-next-line no-await-in-loop
-            //! shite be broke AF, commented out to ya know work
-            // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
             packageService.updateOneById(pkg.uuid, pkg);
           }
         } else {
-          // eslint-disable-next-line no-await-in-loop
-          //! shite be broke AF, commented out to ya know work
-          // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
           packageService.insertOne(pkg);
         }
       }
@@ -276,9 +264,6 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     await Promise.all(
       yamls.map(async yaml => {
         const pkg = yaml as unknown as PackageModel;
-        //! shite be broke AF, commented out to ya know work
-        // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
-
         packageService.insertOne(pkg);
       }),
     );
@@ -313,17 +298,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
-            // eslint-disable-next-line no-await-in-loop
-            //! shite be broke AF, commented out to ya know work
-            // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
-
             packageService.updateOneById(pkg.uuid, pkg);
           }
         } else {
-          // eslint-disable-next-line no-await-in-loop
-          //! shite be broke AF, commented out to ya know work
-          // pkg.Favicon = await imageHelper.getFavicon(pkg.Homepage);
-
           packageService.insertOne(pkg);
         }
       }
@@ -332,7 +309,40 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
   });
 
+  // *----------------- override package image ---------------------
+  fastify.post("/ghs/imageOverride", async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      return new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      return new Error("forbidden");
+    }
 
+    const packageService = new PackageService();
+
+    const { pkgId, iconUrl } = request.body;
+
+    const pkgExist = await packageService.findOne({ filters: { Id: pkgId as string } });
+
+    if (pkgExist == null || iconUrl === "") {
+      return "package not found, or bad rquest";
+    }
+
+    pkgExist.IconUrl = iconUrl;
+    const result = await packageService.update({
+      filters: { Id: pkgExist.Id },
+      update: {
+        IconUrl: iconUrl,
+      },
+    });
+
+    return `updated ${result.modifiedCount} iconUrl at ${new Date().toISOString()} for ID - ${pkgExist.Id}`;
+  });
+
+  // *-----------------  auto complete ---------------------
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
     const { query } = request.query;
 
