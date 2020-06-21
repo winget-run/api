@@ -14,7 +14,7 @@ The REST API behind [winget.run](https://winget.run), allowing users to search, 
         - [GET /ghs/manualImport](#get-ghsmanualimport)
         - [GET /ghs/update](#get-ghsupdate)
         - [GET /ghs/manualUpdate](#get-ghsmanualupdate)
-      - [POST /ghs/imageOverride](#post-ghsimageoverride)
+        - [POST /ghs/imageOverride](#post-ghsimageoverride)
         - [GET /search](#get-search)
         - [GET /autocomplete](#get-autocomplete)
         - [GET /{org}](#get-org)

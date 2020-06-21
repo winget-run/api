@@ -332,8 +332,14 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     pkgExist.IconUrl = iconUrl;
+    const result = await packageService.update({
+      filters: { Id: pkgExist.Id },
+      update: {
+        IconUrl: iconUrl,
+      },
+    });
 
-    return `updated ${pkgExist.Id} iconUrl at ${new Date().toISOString()} with ${iconUrl} `;
+    return `updated ${result.modifiedCount} iconUrl at ${new Date().toISOString()} for ID - ${pkgExist.Id}`;
   });
 
   // *-----------------  auto complete ---------------------
