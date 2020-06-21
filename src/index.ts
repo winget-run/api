@@ -1,11 +1,13 @@
 import "reflect-metadata";
 
+import "./database/index";
+
 // import fs from "fs";
 
 // import dotenv from "dotenv";
 
 // eslint-disable-next-line import/first
-import { connect } from "./database";
+import { connect } from "./database/old";
 // eslint-disable-next-line import/first
 import { startServer } from "./server";
 
@@ -42,8 +44,8 @@ import { startServer } from "./server";
 // TODO: rename ci/cd github actions workflow to be consistent across repos
 (async (): Promise<void> => {
   try {
-    await connect();
-    await startServer();
+    // await connect();
+    // await startServer();
   } catch (error) {
     console.error(`startup error: ${error}`);
     process.exit(-1);

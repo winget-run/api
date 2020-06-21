@@ -2,11 +2,11 @@ import { FastifyInstance } from "fastify";
 
 import * as _ from "lodash";
 import { ratelimit } from "../plugins";
-import { PackageService } from "../../database";
+import { PackageService } from "../../database/old";
 
 import ghService from "../ghService/index";
-import PackageModel from "../../database/model/package";
-import { SortOrder } from "../../database/types";
+import PackageModel from "../../database/old/model/package";
+import { SortOrder } from "../../database/old/types";
 
 import imageHelper from "../ghService/helpers/packageImageHelper";
 
