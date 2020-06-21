@@ -1,73 +1,132 @@
-import fetch from "node-fetch";
-import { BatchImport, Item } from "../types/import/batchImportModel";
+import { TextDecoder } from "util";
 
-import { parsePackageYaml } from "../helpers/decodingHelper";
+import fetch from "node-fetch";
+
+import * as jsYaml from "js-yaml";
+import { ManifestFolderList } from "../types/import/manifestFolderListModel";
+
 
 const {
   GITHUB_TOKEN,
 } = process.env;
 
-const BASE_URL = "https://api.github.com/search/code?q=extension:yaml+repo:microsoft/winget-pkgs+path:/manifests";
-const TAKE = 100;
+const CONTENTS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/contents";
 
-const getPageCount = async (): Promise<number> => {
-  const model: BatchImport = await fetch(`${BASE_URL}&page=0&per_page=1`, {
+//! only call for initial import
+const getManifestFolderPaths = async (): Promise<string[]> => {
+  const manifestFolderList: Promise<ManifestFolderList[]> = await fetch(
+    `${CONTENTS_BASE_URL}/manifests`, {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+      },
+    },
+  ).then((res) => res.json());
+
+  const manifestFolderPaths = await (await manifestFolderList).map(
+    (x) => x.path,
+  );
+
+  return manifestFolderPaths;
+};
+
+const getPackageFolderPaths = async (): Promise<string[]> => {
+  //! only use for inital bulk import
+  const manifestFolderPaths = await getManifestFolderPaths();
+
+  const packageFolders: ManifestFolderList[] = await Promise.all(
+    manifestFolderPaths.map((e) => fetch(`${CONTENTS_BASE_URL}/${e}`, {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+      },
+    }).then((res) => res.json())),
+  );
+
+  const flatPackageFolderPaths: ManifestFolderList[] = packageFolders.flat(
+    packageFolders.length,
+  );
+  const packageFolderPaths = flatPackageFolderPaths.map((x) => x.path);
+
+  return packageFolderPaths;
+};
+
+// for people like mongo who cant read the docs
+const handleThreeLevelDeep = async (path: string): Promise<string> => {
+  const downloadUrlPath: ManifestFolderList[] = await fetch(`${CONTENTS_BASE_URL}/${path}`, {
     headers: {
       Authorization: `token ${GITHUB_TOKEN}`,
     },
   }).then(res => res.json());
-  const totalCount = model.total_count;
-  const pageCount = Math.ceil(totalCount / TAKE);
 
-  return pageCount;
+  const downloadUrl = downloadUrlPath[0].download_url;
+
+  return downloadUrl;
 };
 
-const getPackgeUrls = async (): Promise<string[]> => {
-  // set page count
-  const pageCount = await getPageCount();
+const getPackageDownloadUrls = async (): Promise<string[]> => {
+  const packageFolderPaths = await getPackageFolderPaths();
 
-  let yamlUrls: string[] = [];
-
-  for (let page = 1; page <= pageCount; page += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    const model: BatchImport = await fetch(`${BASE_URL}&page=${page}&per_page=${TAKE}`, {
+  const downloadUrlPaths: ManifestFolderList[] = await Promise.all(
+    packageFolderPaths.map((path) => fetch(`${CONTENTS_BASE_URL}/${path}`, {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
-    })
-      .then(res => res.json());
+    }).then((res) => res.json())),
+  );
 
-    const items: Item[] = model.items.map(item => item);
-    const urls = items.map(x => x.url);
+  const flatDownloadUrls: ManifestFolderList[] = downloadUrlPaths.flat(
+    downloadUrlPaths.length,
+  );
 
-    yamlUrls = [...yamlUrls, ...urls];
+  const downloadUrls: string[] = [];
+
+  // check if it has three levels
+  // eslint-disable-next-line no-plusplus
+  for (let i = 0; i < flatDownloadUrls.length; i++) {
+    if (flatDownloadUrls[i].download_url == null) {
+      // eslint-disable-next-line no-await-in-loop
+      const url: string = await handleThreeLevelDeep(flatDownloadUrls[i].path);
+      downloadUrls.push(url);
+    } else {
+      downloadUrls.push(flatDownloadUrls[i].download_url);
+    }
   }
 
-  return yamlUrls;
+  return downloadUrls;
 };
 
 const getPackageYamls = async (): Promise<string[]> => {
-  const packageUrls = await getPackgeUrls();
+  const downloadUrls = await (await getPackageDownloadUrls()).filter(x => x != null);
+
+  console.log(downloadUrls);
 
   const packageYamls = Promise.all(
-    packageUrls.map((url) => fetch(url, {
+    downloadUrls.map((url) => fetch(url, {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
-        Accept: "application/vnd.github.v3.raw",
       },
     })
-      .then(res => res.buffer())
-      .then(buf => {
-        const res = parsePackageYaml(buf);
+      .then(res => res.arrayBuffer())
+      .then(buffer => {
+        const utf8decoder = new TextDecoder("utf-8");
+        const utf16decoder = new TextDecoder("utf-16");
+
+        let res;
+
+        try {
+          const text = utf8decoder.decode(buffer);
+          res = jsYaml.safeLoad(text);
+        } catch (error) {
+          const text = utf16decoder.decode(buffer);
+          res = jsYaml.safeLoad(text);
+        }
 
         return res;
       })),
   );
-
 
   return packageYamls;
 };
 
 export = {
   getPackageYamls,
-}
+};
