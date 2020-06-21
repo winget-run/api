@@ -198,10 +198,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     await Promise.all(
-      yamls.map(async yaml => {
-        const pkg = yaml as unknown as PackageModel;
-        packageService.insertOne(pkg);
-      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      yamls.map((yaml) => packageService.insertOne(yaml as any)),
     );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
