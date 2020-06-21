@@ -8,7 +8,6 @@ import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
 
-
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
 
@@ -199,8 +198,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+      yamls.map(async yaml => {
+        const pkg = yaml as unknown as PackageModel;
+        packageService.insertOne(pkg);
+      }),
     );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
@@ -224,22 +225,20 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     if (updateYamls.length > 0) {
       const packageService = new PackageService();
 
-      await Promise.all(updateYamls.map(async (yaml) => {
-        const pkg = yaml as unknown as PackageModel;
+      for (let i = 0; i < updateYamls.length; i += 1) {
+        const pkg = updateYamls[i] as unknown as PackageModel;
+        // eslint-disable-next-line no-await-in-loop
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
-        if (pkgExist !== undefined && pkgExist.Id != null) {
+        if (pkgExist !== undefined && pkgExist.Id !== null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
-
           if (!equal) {
             packageService.updateOneById(pkg.uuid, pkg);
           }
-
-        // eslint-disable-next-line padded-blocks
         } else {
           packageService.insertOne(pkg);
         }
-      }));
+      }
     }
 
     return `${updateYamls.length} updated at ${new Date().toISOString()}`;
@@ -263,8 +262,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const packageService = new PackageService();
 
     await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+      yamls.map(async yaml => {
+        const pkg = yaml as unknown as PackageModel;
+        packageService.insertOne(pkg);
+      }),
     );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
@@ -288,9 +289,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     if (updatedYamls.length > 0) {
       const packageService = new PackageService();
 
-      await Promise.all(updatedYamls.map(async (yaml) => {
-        const pkg = yaml as unknown as PackageModel;
-
+      for (let i = 0; i < updatedYamls.length; i += 1) {
+        const pkg = updatedYamls[i] as unknown as PackageModel;
+        // eslint-disable-next-line no-await-in-loop
         const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
 
         if (pkgExist !== undefined && pkgExist.Id != null) {
@@ -299,17 +300,49 @@ export default async (fastify: FastifyInstance): Promise<void> => {
           if (!equal) {
             packageService.updateOneById(pkg.uuid, pkg);
           }
-
-        // eslint-disable-next-line padded-blocks
         } else {
           packageService.insertOne(pkg);
         }
-      }));
+      }
     }
 
     return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
   });
 
+  // *----------------- override package image ---------------------
+  fastify.post("/ghs/imageOverride", async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      return new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      return new Error("forbidden");
+    }
+
+    const packageService = new PackageService();
+
+    const { pkgId, iconUrl } = request.body;
+
+    const pkgExist = await packageService.findOne({ filters: { Id: pkgId as string } });
+
+    if (pkgExist == null || iconUrl === "") {
+      return "package not found, or bad rquest";
+    }
+
+    pkgExist.IconUrl = iconUrl;
+    const result = await packageService.update({
+      filters: { Id: pkgExist.Id },
+      update: {
+        IconUrl: iconUrl,
+      },
+    });
+
+    return `updated ${result.modifiedCount} iconUrl at ${new Date().toISOString()} for ID - ${pkgExist.Id}`;
+  });
+
+  // *-----------------  auto complete ---------------------
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
     const { query } = request.query;
 

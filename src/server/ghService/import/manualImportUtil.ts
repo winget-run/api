@@ -1,10 +1,8 @@
-import { TextDecoder } from "util";
 
 import fetch from "node-fetch";
+import { parsePackageYaml } from "../helpers/decodingHelper";
 
-import * as jsYaml from "js-yaml";
 import { ManifestFolderList } from "../types/import/manifestFolderListModel";
-
 
 const {
   GITHUB_TOKEN,
@@ -67,12 +65,11 @@ const getPackageDownloadUrls = async (manifests: string[]): Promise<string[]> =>
     downloadUrlPaths.length,
   );
 
-  const downloadUrls = flatDownloadUrls.map((url) => url.download_url);
+  const downloadUrls: string[] = [];
 
   // check if it has three levels
-  // eslint-disable-next-line no-plusplus
-  for (let i = 0; i < flatDownloadUrls.length; i++) {
-    if (flatDownloadUrls[i].download_url == null) {
+  for (let i = 0; i < flatDownloadUrls.length; i += 1) {
+    if (flatDownloadUrls[i].download_url === null) {
       // eslint-disable-next-line no-await-in-loop
       const url: string = await handleThreeLevelDeep(flatDownloadUrls[i].path);
       downloadUrls.push(url);
@@ -93,20 +90,9 @@ const getPackageYamls = async (manifests: string[]): Promise<string[]> => {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
     })
-      .then(res => res.arrayBuffer())
-      .then(buffer => {
-        const utf8decoder = new TextDecoder("utf-8");
-        const utf16decoder = new TextDecoder("utf-16");
-
-        let res;
-
-        try {
-          const text = utf8decoder.decode(buffer);
-          res = jsYaml.safeLoad(text);
-        } catch (error) {
-          const text = utf16decoder.decode(buffer);
-          res = jsYaml.safeLoad(text);
-        }
+      .then(res => res.buffer())
+      .then(buf => {
+        const res = parsePackageYaml(buf);
 
         return res;
       })),

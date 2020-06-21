@@ -98,6 +98,9 @@ class PackageModel extends BaseModel implements IPackage {
       LicenseUrl?: string;
     }
   ];
+
+  @Column()
+  public IconUrl?: string;
 }
 
 export default PackageModel;
