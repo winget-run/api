@@ -100,7 +100,7 @@ class PackageModel extends BaseModel implements IPackage {
   ];
 
   @Column()
-  public Favicon?: string;
+  public IconUrl?: string;
 }
 
 export default PackageModel;
