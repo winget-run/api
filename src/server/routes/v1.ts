@@ -226,12 +226,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       for (let i = 0; i < updateYamls.length; i += 1) {
         const pkg = updateYamls[i] as unknown as PackageModel;
         // eslint-disable-next-line no-await-in-loop
-        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
 
         if (pkgExist !== undefined && pkgExist.Id !== null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
           if (!equal) {
-            packageService.updateOneById(pkg.uuid, pkg);
+            packageService.updateOneById(pkgExist.uuid, pkg);
           }
         } else {
           packageService.insertOne(pkg);
@@ -290,13 +290,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       for (let i = 0; i < updatedYamls.length; i += 1) {
         const pkg = updatedYamls[i] as unknown as PackageModel;
         // eslint-disable-next-line no-await-in-loop
-        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
 
         if (pkgExist !== undefined && pkgExist.Id != null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
-            packageService.updateOneById(pkg.uuid, pkg);
+            packageService.updateOneById(pkgExist.uuid, pkg);
           }
         } else {
           packageService.insertOne(pkg);
@@ -305,6 +305,33 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     return `updated ${updatedYamls.length} packages at ${new Date().toISOString()}`;
+  });
+
+  // *----------------- single package import ---------------------
+  fastify.post("/ghs/singleImport", async (request, reply) => {
+    const accessToken = request.headers["xxx-access-token"];
+    if (accessToken == null) {
+      reply.status(401);
+      throw new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      reply.status(403);
+      throw new Error("forbidden");
+    }
+
+    const manifestPath = request.body.manifestPath as string;
+    const yaml = await ghService.importSinglePackage(manifestPath);
+
+    if (yaml == null || yaml === "") {
+      return "error no yaml found";
+    }
+
+    const packageService = new PackageService();
+    const pkg = yaml as unknown as PackageModel;
+
+    const result = await packageService.insertOne(pkg);
+
+    return `insertted ${result.insertedCount} with ID - ${pkg.Id}`;
   });
 
   // *----------------- override package image ---------------------
