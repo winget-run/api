@@ -1,4 +1,6 @@
 import fetch from "node-fetch";
+import { TextDecoder } from "util";
+import * as jsYaml from "js-yaml";
 
 import { ManifestFolderList } from "../types/import/manifestFolderListModel";
 
@@ -20,6 +22,31 @@ const getPackageDownloadUrl = async (manifestPath: string): Promise<string> => {
   return downloadUrl;
 };
 
-const getManifest = async(downloadUrl: string) => {
+const getPackageYaml = async (manifestPath: string): Promise<string> => {
+  const downloadUrl = await getPackageDownloadUrl(manifestPath);
 
+  const packageYaml = await fetch(downloadUrl)
+    .then(res => res.buffer())
+    .then(buffer => {
+      const utf8decoder = new TextDecoder("utf-8");
+      const utf16decoder = new TextDecoder("utf-16");
+
+      let res;
+
+      try {
+        const text = utf8decoder.decode(buffer);
+        res = jsYaml.safeLoad(text);
+      } catch (error) {
+        const text = utf16decoder.decode(buffer);
+        res = jsYaml.safeLoad(text);
+      }
+
+      return res;
+    });
+
+  return packageYaml;
+};
+
+export = {
+  getPackageYaml,
 };

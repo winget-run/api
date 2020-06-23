@@ -2,6 +2,7 @@ import importPackageUtil from "./import/importPackageUtil";
 import manualPackageImportUtil from "./import/manualImportUtil";
 import updatePackageUtil from "./update/updatePackageUtil";
 import manualPackageUpdateUtil from "./update/manualPackageUpdateUtil";
+import singlePackageImportUtil from "./import/singlePackageImport";
 
 const initialPackageImport = async (): Promise<string[]> => {
   const packageYamls = await importPackageUtil.getPackageYamls();
@@ -26,9 +27,16 @@ const manualPackageUpdate = async (since: Date, until: Date): Promise<string[]> 
   return updatedPackageYamls;
 };
 
+const importSinglePackage = async (manifestPath: string): Promise<string> => {
+  const singleYaml = await singlePackageImportUtil.getPackageYaml(manifestPath);
+
+  return singleYaml;
+};
+
 export = {
   initialPackageImport,
   manualPackageImport,
   updatePackages,
   manualPackageUpdate,
+  importSinglePackage,
 };
