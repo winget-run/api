@@ -7,6 +7,7 @@ import { PackageService } from "../../database";
 import ghService from "../ghService/index";
 import PackageModel from "../../database/model/package";
 import { SortOrder } from "../../database/types";
+import { eq } from "lodash";
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -225,13 +226,14 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
       for (let i = 0; i < updateYamls.length; i += 1) {
         const pkg = updateYamls[i] as unknown as PackageModel;
+        console.log(pkg);
         // eslint-disable-next-line no-await-in-loop
-        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
 
         if (pkgExist !== undefined && pkgExist.Id !== null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
           if (!equal) {
-            packageService.updateOneById(pkg.uuid, pkg);
+            packageService.updateOneById(pkgExist.uuid, pkg);
           }
         } else {
           packageService.insertOne(pkg);
@@ -290,13 +292,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       for (let i = 0; i < updatedYamls.length; i += 1) {
         const pkg = updatedYamls[i] as unknown as PackageModel;
         // eslint-disable-next-line no-await-in-loop
-        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id } });
+        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
 
         if (pkgExist !== undefined && pkgExist.Id != null) {
           const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
           if (!equal) {
-            packageService.updateOneById(pkg.uuid, pkg);
+            packageService.updateOneById(pkgExist.uuid, pkg);
           }
         } else {
           packageService.insertOne(pkg);
