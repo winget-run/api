@@ -26,3 +26,13 @@
 - indexing
 - database connection (for any deployment)
 - per schema options
+---
+- connect
+---
+- @collection({ options })
+- @field({ validation })
+- @id({ options })
+- @index({ options })
+---
+- @service({ options })
+- new Service(client, database)

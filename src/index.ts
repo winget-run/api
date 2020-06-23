@@ -1,6 +1,6 @@
 import "reflect-metadata";
 
-import "./database/index";
+import "./database/mongo/index";
 
 // import fs from "fs";
 

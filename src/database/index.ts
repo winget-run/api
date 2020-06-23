@@ -1,57 +1,12 @@
 /* eslint-disable max-classes-per-file */
 
 import { MongoClient, Db } from "mongodb";
-import { injectable, inject, Container } from "inversify";
-
-//
-interface IDatabase {
-
-}
-
-interface IConnection {
-
-}
-
-class Database implements IDatabase {
-  protected database!: Db;
-
-  constructor(database: Db) {
-    this.database = database;
-  }
-
-  find<T extends IBaseModel>(filters: any): Promise<T[]> {
-    return this.database.collection<T>().find(filters).toArray();
-  }
-}
-
-class Connection implements IConnection {
-  protected client!: MongoClient;
-
-  constructor(client: MongoClient) {
-    this.client = client;
-  }
-
-  database(databaseName: string): IDatabase {
-    return new Database(this.client.db(databaseName));
-  }
-}
-//
-
-//
-const TYPES = {
-  Database: Symbol.for("Database"),
-};
-
-const container = new Container();
-container.bind<IDatabase>(TYPES.Database).to(Database);
-//
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
 const collection = () => <T extends Constructor>(Base: T) => {
-  @injectable()
   class Collection extends Base {
-    @inject(TYPES.Database) private database!: Database;
+
   }
 
   return Collection;
@@ -112,15 +67,15 @@ class BaseModel implements IBaseModel {
 }
 
 //
-const connect = async (): Promise<IConnection> => {
-  const client = await MongoClient.connect("mongodb://localhost:27017/rawrxd", {
+const connect = async (): Promise<MongoClient> => {
+  const client = await MongoClient.connect("mongodb://localhost:27017", {
     useUnifiedTopology: true,
   });
 
   // temp
   console.log("connected to mongo");
 
-  return new Connection(client);
+  return client;
 };
 
 (async (): Promise<void> => {
