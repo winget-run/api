@@ -1,6 +1,7 @@
 
 import fetch from "node-fetch";
-import { parsePackageYaml } from "../helpers/decodingHelper";
+import { TextDecoder } from "util";
+import * as jsYaml from "js-yaml";
 
 import { ManifestFolderList } from "../types/import/manifestFolderListModel";
 
@@ -91,8 +92,19 @@ const getPackageYamls = async (manifests: string[]): Promise<string[]> => {
       },
     })
       .then(res => res.buffer())
-      .then(buf => {
-        const res = parsePackageYaml(buf);
+      .then(buffer => {
+        const utf8decoder = new TextDecoder("utf-8");
+        const utf16decoder = new TextDecoder("utf-16");
+
+        let res;
+
+        try {
+          const text = utf8decoder.decode(buffer);
+          res = jsYaml.safeLoad(text);
+        } catch (error) {
+          const text = utf16decoder.decode(buffer);
+          res = jsYaml.safeLoad(text);
+        }
 
         return res;
       })),
