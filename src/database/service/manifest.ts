@@ -7,13 +7,10 @@ import {
   IBaseInsert,
   IBaseUpdate,
 } from "../types";
-import PackageService from "./package";
 
 // yes ik, dependency injection, i swear i will later
 class ManifestService extends BaseService<ManifestModel> {
   protected repository = getMongoRepository(ManifestModel);
-
-  protected packageService = new PackageService();
 
   // checks if there are manifests with a certain id in the database
   // returns an array of the manifests with given id (res.length === 0 -> no manifests)
