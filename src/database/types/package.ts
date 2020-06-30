@@ -15,9 +15,6 @@ interface IPackage extends IBase {
 
   // extra
   IconUrl?: string;
-
-  // internal
-  PaddedVersion: string;
 }
 
 export {

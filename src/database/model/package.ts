@@ -23,10 +23,6 @@ class PackageModel extends BaseModel implements IPackage {
   // extra
   @Column()
   IconUrl?: string;
-
-  // internal
-  @Column()
-  PaddedVersion!: string;
 }
 
 export default PackageModel;

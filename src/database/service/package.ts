@@ -21,7 +21,9 @@ class PackageService extends BaseService<PackageModel> {
       {
         Id: id,
       },
-      pkg,
+      {
+        $set: pkg,
+      },
       {
         upsert: true,
       },

@@ -34,7 +34,7 @@ interface IManifest extends IBase {
       Sha256: string;
       SignatureSha256?: string;
       Language?: string;
-      InstallerType: string;
+      InstallerType?: string;
       Scope?: string;
       SystemAppId?: string;
       Switches?: {

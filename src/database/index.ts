@@ -6,6 +6,13 @@ import { createConnection } from "typeorm";
 import { PackageModel, ManifestModel } from "./model";
 import { IPackage, IManifest } from "./types";
 import { PackageService, ManifestService } from "./service";
+import {
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
+} from "./helpers";
 
 // patch the typeorm MongoDriver to support mongo 3.6+ tls options
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -33,13 +40,13 @@ const {
 } = process.env;
 
 const connect = async (): Promise<void> => {
-  const certPath = path.join(NODE_PATH, "mongo-cert.pem");
-  fs.writeFileSync(certPath, MONGO_CERT);
+  // const certPath = path.join(NODE_PATH, "mongo-cert.pem");
+  // fs.writeFileSync(certPath, MONGO_CERT);
 
-  const envOptions = {
-    ...(NODE_ENV === "dev" ? { tlsAllowInvalidCertificates: true } : {}),
-    ...(NODE_ENV === "prod" ? { tlsCAFile: CA_PATH } : {}),
-  };
+  // const envOptions = {
+  //   ...(NODE_ENV === "dev" ? { tlsAllowInvalidCertificates: true } : {}),
+  //   ...(NODE_ENV === "prod" ? { tlsCAFile: CA_PATH } : {}),
+  // };
 
   await createConnection({
     type: "mongodb",
@@ -47,16 +54,16 @@ const connect = async (): Promise<void> => {
     url: `mongodb://${MONGO_HOST}/${MONGO_DB}`,
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    authMechanism: "MONGODB-X509",
-    authSource: "$external",
+    // authMechanism: "MONGODB-X509",
+    // authSource: "$external",
 
     // requires a patch to work with mongo 3.6+ features (tls)
-    extra: {
-      tls: true,
-      tlsCertificateKeyFile: certPath,
+    // extra: {
+    //   tls: true,
+    //   tlsCertificateKeyFile: certPath,
 
-      ...envOptions,
-    },
+    //   ...envOptions,
+    // },
 
     entities: [
       PackageModel,
@@ -77,4 +84,10 @@ export {
   ManifestModel,
   IManifest,
   ManifestService,
+
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
 };

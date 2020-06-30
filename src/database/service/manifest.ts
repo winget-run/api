@@ -88,7 +88,9 @@ class ManifestService extends BaseService<ManifestModel> {
         Id: id,
         Version: version,
       },
-      manifest,
+      {
+        $set: manifest,
+      },
       {
         upsert: true,
       },
@@ -352,7 +354,7 @@ class ManifestService extends BaseService<ManifestModel> {
             Publisher: f.latest.Publisher,
             Description: f.latest.Description,
             Homepage: f.latest.Homepage,
-            IconUrl: f.latest.IconUrl,
+            // IconUrl: f.latest.IconUrl,
           },
         })));
 
@@ -374,7 +376,7 @@ class ManifestService extends BaseService<ManifestModel> {
         Publisher: f.latest.Publisher,
         Description: f.latest.Description,
         Homepage: f.latest.Homepage,
-        IconUrl: f.latest.IconUrl,
+        // IconUrl: f.latest.IconUrl,
       },
     }));
 
@@ -392,7 +394,7 @@ class ManifestService extends BaseService<ManifestModel> {
         Publisher: f.latest.Publisher,
         Description: f.latest.Description,
         Homepage: f.latest.Homepage,
-        IconUrl: f.latest.IconUrl,
+        // IconUrl: f.latest.IconUrl,
       },
     }));
 

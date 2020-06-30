@@ -13,7 +13,7 @@ if (process.env.NODE_ENV === "dev") {
 }
 
 // eslint-disable-next-line import/first
-import { connect } from "./database";
+import { connect, addOrUpdatePackage } from "./database";
 // eslint-disable-next-line import/first
 import { startServer } from "./server";
 
@@ -39,6 +39,22 @@ import { startServer } from "./server";
   try {
     await connect();
     await startServer();
+
+    // await addOrUpdatePackage({
+    //   Id: "test.test",
+    //   Name: "test",
+    //   Publisher: "test",
+    //   Version: "0.2.0",
+    //   Installers: [
+    //     {
+    //       Arch: "xgay",
+    //       Url: "gay://x",
+    //       Sha256: "yes",
+    //     },
+    //   ],
+    // });
+
+    // console.log("done");
   } catch (error) {
     console.error(`startup error: ${error}`);
     process.exit(-1);

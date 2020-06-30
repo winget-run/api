@@ -6,13 +6,31 @@ import {
   IPackage,
 } from "../types";
 
-const manifestService = new ManifestService();
-const packageService = new PackageService();
-
 // ye theres gonna be longer versions with random characters but those are technically
 // against spec and should break anything sooooo...
 const padSemver = (version: string): string => version.split(".").map(e => e.padEnd(5, "0")).join(".");
 
+enum SortDirection {
+  Ascending = 1,
+  Descending = -1,
+}
+
+const createSortSemver = (direction: SortDirection) => (a: string, b: string): number => {
+  const aPad = padSemver(a);
+  const bPad = padSemver(b);
+
+  if (aPad > bPad) {
+    return direction;
+  }
+
+  if (aPad < bPad) {
+    return -direction;
+  }
+
+  return 0;
+};
+
+// TODO: remove (dead code?)
 const sortSemver = (a: string, b: string): number => {
   const aPad = padSemver(a);
   const bPad = padSemver(b);
@@ -28,7 +46,10 @@ const sortSemver = (a: string, b: string): number => {
 };
 
 // NOTE: pkg are any additional fields that should be updated or overwritten on the package doc
-const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage>): Promise<void> => {
+const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Promise<void> => {
+  const manifestService = new ManifestService();
+  const packageService = new PackageService();
+
   const manifests = await manifestService.find({
     filters: {
       Id: id,
@@ -47,7 +68,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage>): Promise<v
   // get fields from latest
   // get version list
   // get sortable version field
-  const versions = manifests.map(e => e.Version).sort(sortSemver);
+  const versions = manifests.map(e => e.Version).sort(createSortSemver(SortDirection.Descending));
   const latestVersion = versions[0];
 
   // doing a manifests.length check a few lines up
@@ -64,8 +85,6 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage>): Promise<v
       License: latestManifest.License,
     },
 
-    PaddedVersion: padSemver(latestVersion),
-
     ...pkg,
   };
 
@@ -76,7 +95,9 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage>): Promise<v
 
 // NOTE: for simplicity, a package is completely re-added/updated after a corresponding manifest change
 // this 1. isnt a big issue cos reads >>> writes, and 2. manifest errors can be easily fixed
-const addOrUpdatePackage = async (manifest: IBaseInsert<IManifest>, pkg: IBaseUpdate<IPackage>): Promise<void> => {
+const addOrUpdatePackage = async (manifest: IBaseInsert<IManifest>, pkg: IBaseUpdate<IPackage> = {}): Promise<void> => {
+  const manifestService = new ManifestService();
+
   const { Id: id } = manifest;
 
   if (id == null) {
@@ -87,7 +108,9 @@ const addOrUpdatePackage = async (manifest: IBaseInsert<IManifest>, pkg: IBaseUp
   await rebuildPackage(id, pkg);
 };
 
-const removePackage = async (id: string, version: string, pkg: IBaseUpdate<IPackage>): Promise<void> => {
+const removePackage = async (id: string, version: string, pkg: IBaseUpdate<IPackage> = {}): Promise<void> => {
+  const manifestService = new ManifestService();
+
   await manifestService.removeManifestVersion(id, version);
   await rebuildPackage(id, pkg);
 };
