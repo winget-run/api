@@ -2,7 +2,12 @@ import { FastifyInstance } from "fastify";
 
 import * as _ from "lodash";
 import { ratelimit } from "../plugins";
-import { ManifestService, ManifestModel, addOrUpdatePackage, rebuildPackage } from "../../database";
+import {
+  ManifestService,
+  ManifestModel,
+  addOrUpdatePackage,
+  rebuildPackage,
+} from "../../database";
 
 import ghService from "../ghService/index";
 import { SortOrder } from "../../database/types";
@@ -20,7 +25,6 @@ const {
   NODE_ENV,
   API_ACCESS_TOKEN,
 } = process.env;
-
 
 // TODO: split this file up
 const autocompleteSchema = {

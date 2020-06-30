@@ -41,6 +41,8 @@ const getPackageYaml = async (manifestPath: string): Promise<string> => {
         res = jsYaml.safeLoad(text);
       }
 
+      res.Version = String(res.Version);
+
       return res;
     });
 
