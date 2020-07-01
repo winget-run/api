@@ -1,6 +1,5 @@
 import { FastifyInstance } from "fastify";
 
-import * as _ from "lodash";
 import { ratelimit } from "../plugins";
 import {
   ManifestService,

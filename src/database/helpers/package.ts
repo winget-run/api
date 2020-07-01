@@ -86,6 +86,8 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
     },
 
     ...pkg,
+
+    UpdatedAt: new Date(),
   };
 
   packageService.upsertPackage(newPkg);

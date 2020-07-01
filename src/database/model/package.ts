@@ -23,6 +23,10 @@ class PackageModel extends BaseModel implements IPackage {
   // extra
   @Column()
   IconUrl?: string;
+
+  // stats
+  @Column()
+  UpdatedAt!: Date;
 }
 
 export default PackageModel;

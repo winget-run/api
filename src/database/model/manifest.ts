@@ -1,10 +1,9 @@
-import { Column, Entity, Unique } from "typeorm";
+import { Column, Entity } from "typeorm";
 
 import BaseModel from "./base";
 import { IManifest } from "../types";
 
 @Entity()
-@Unique(["Id", "Version"])
 class ManifestModel extends BaseModel implements IManifest {
   @Column()
   public Id!: string;

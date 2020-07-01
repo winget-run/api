@@ -15,6 +15,9 @@ interface IPackage extends IBase {
 
   // extra
   IconUrl?: string;
+
+  // stats
+  UpdatedAt: Date;
 }
 
 export {
