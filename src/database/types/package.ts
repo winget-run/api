@@ -9,12 +9,15 @@ interface IPackage extends IBase {
   Latest: {
     Name: string;
     Publisher: string;
+    Tags: string[];
     Description?: string;
     License?: string;
   };
 
   // extra
+  Featured: boolean;
   IconUrl?: string;
+  Banner?: string;
 
   // stats
   UpdatedAt: Date;

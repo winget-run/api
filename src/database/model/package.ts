@@ -16,13 +16,20 @@ class PackageModel extends BaseModel implements IPackage {
   Latest!: {
     Name: string;
     Publisher: string;
+    Tags: string[];
     Description?: string;
     License?: string;
   };
 
   // extra
   @Column()
+  Featured!: boolean;
+
+  @Column()
   IconUrl?: string;
+
+  @Column()
+  Banner?: string;
 
   // stats
   @Column()

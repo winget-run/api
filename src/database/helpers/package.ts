@@ -65,14 +65,18 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
     return;
   }
 
+  // TODO: just sort the manifests array instead
+
   // get fields from latest
   // get version list
   // get sortable version field
   const versions = manifests.map(e => e.Version).sort(createSortSemver(SortDirection.Descending));
   const latestVersion = versions[0];
-
   // doing a manifests.length check a few lines up
   const latestManifest = manifests.find(e => e.Version === latestVersion) as IManifest;
+  //
+
+  const tags = latestManifest.Tags == null ? [] : latestManifest.Tags.split(",");
 
   const newPkg = {
     Id: latestManifest.Id,
@@ -81,9 +85,12 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
     Latest: {
       Name: latestManifest.Name,
       Publisher: latestManifest.Publisher,
+      Tags: tags,
       Description: latestManifest.Description,
       License: latestManifest.License,
     },
+
+    Featured: false,
 
     ...pkg,
 
