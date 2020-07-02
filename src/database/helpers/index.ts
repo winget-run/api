@@ -2,6 +2,13 @@ import muuid from "uuid-mongodb";
 // import rfdc from "rfdc";
 
 import {
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
+} from "./package";
+import {
   IBase,
   IBaseFindManyOptions,
   IBaseInternalFindManyOptions,
@@ -75,4 +82,10 @@ export {
   mapInternalFilters,
   mapInternalFindOneOptions,
   mapInternalFindManyOptions,
+
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
 };

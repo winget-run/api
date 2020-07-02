@@ -1,7 +1,9 @@
 import BaseModel from "./base";
-import Package from "./package";
+import PackageModel from "./package";
+import ManifestModel from "./manifest";
 
 export {
   BaseModel,
-  Package,
+  PackageModel,
+  ManifestModel,
 };

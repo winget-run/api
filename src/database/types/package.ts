@@ -3,56 +3,21 @@ import { IBase } from "./base";
 // TODO validation and enums
 interface IPackage extends IBase {
   Id: string;
-  Name: string;
-  AppMoniker?: string;
-  Version: string;
-  Publisher: string;
-  Channel?: string;
-  Author?: string;
-  License?: string;
-  LicenseUrl?: string;
-  MinOSVersion?: string;
-  Description?: string;
-  Homepage?: string;
-  Tags?: string;
-  FileExtensions?: string;
-  Protocols?: string;
-  Commands?: string;
-  InstallerType?: string;
-  Switches?: {
-    Custom?: string;
-    Silent?: string;
-    SilentWithProgress?: string;
-    Interactive?: string;
-    Language?: string;
+
+  // version stuff
+  Versions: string[];
+  Latest: {
+    Name: string;
+    Publisher: string;
+    Description?: string;
+    License?: string;
   };
-  Log?: string;
-  InstallLocation?: string;
-  Installers: [
-    {
-      Arch: string;
-      Url: string;
-      Sha256: string;
-      SignatureSha256?: string;
-      Language?: string;
-      InstallerType: string;
-      Scope?: string;
-      SystemAppId?: string;
-      Switches?: {
-        Language?: string;
-        Custom?: string;
-      };
-    }
-  ];
-  Localization?: [
-    {
-      Language: string;
-      Description?: string;
-      Homepage?: string;
-      LicenseUrl?: string;
-    }
-  ];
+
+  // extra
   IconUrl?: string;
+
+  // stats
+  UpdatedAt: Date;
 }
 
 export {

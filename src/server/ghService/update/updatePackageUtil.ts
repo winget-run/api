@@ -100,6 +100,8 @@ const getUpdatedPackageYamls = async (): Promise<string[]> => {
           res = jsYaml.safeLoad(text);
         }
 
+        res.Version = String(res.Version);
+
         return res;
       })),
   );

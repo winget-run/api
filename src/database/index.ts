@@ -3,9 +3,16 @@ import path from "path";
 
 import { createConnection } from "typeorm";
 
-import { Package } from "./model";
-import { IPackage } from "./types";
-import { PackageService } from "./service";
+import { PackageModel, ManifestModel } from "./model";
+import { IPackage, IManifest } from "./types";
+import { PackageService, ManifestService } from "./service";
+import {
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
+} from "./helpers";
 
 // patch the typeorm MongoDriver to support mongo 3.6+ tls options
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -59,7 +66,8 @@ const connect = async (): Promise<void> => {
     },
 
     entities: [
-      Package,
+      PackageModel,
+      ManifestModel,
     ],
   });
 
@@ -69,7 +77,17 @@ const connect = async (): Promise<void> => {
 export {
   connect,
 
-  Package,
+  PackageModel,
   IPackage,
   PackageService,
+
+  ManifestModel,
+  IManifest,
+  ManifestService,
+
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
 };

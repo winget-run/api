@@ -1,6 +1,7 @@
 import { IBase } from "./base";
 // import {} from "./error";
 import { IPackage } from "./package";
+import { IManifest } from "./manifest";
 import {
   SortOrder,
   IBaseFilters,
@@ -22,6 +23,7 @@ import {
 export {
   IBase,
   IPackage,
+  IManifest,
 
   SortOrder,
   IBaseFilters,

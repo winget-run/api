@@ -91,6 +91,8 @@ const getUpdatedPackageYamls = async (since: Date, until: Date): Promise<string[
           res = jsYaml.safeLoad(text);
         }
 
+        res.Version = String(res.Version);
+
         return res;
       })),
   );
