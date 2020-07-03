@@ -3,7 +3,8 @@ import { IBase } from ".";
 enum StatsResolution {
   Hour = "hour",
   Day = "day",
-  Week = "week",
+  Week = "isoWeek",
+  Month = "month",
 }
 
 interface IStats extends IBase {
@@ -12,7 +13,13 @@ interface IStats extends IBase {
   Value: number;
 }
 
+interface IStatsSeries {
+  Period: Date;
+  Value: number;
+}
+
 export {
   StatsResolution,
   IStats,
+  IStatsSeries,
 };

@@ -28,6 +28,7 @@
   "dependencies": {
     "@types/encoding-japanese": "^1.0.15",
     "@types/lodash": "^4.14.153",
+    "@types/moment": "^2.13.0",
     "bson": "^4.0.4",
     "cross-env": "^7.0.2",
     "dotenv": "^8.2.0",
@@ -36,6 +37,7 @@
     "fastify-cors": "^3.0.3",
     "js-yaml": "^3.14.0",
     "lodash": "^4.17.15",
+    "moment": "^2.27.0",
     "mongodb": "^3.5.7",
     "node-fetch": "^2.6.0",
     "reflect-metadata": "^0.1.13",
