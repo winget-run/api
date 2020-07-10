@@ -76,7 +76,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
   const latestManifest = manifests.find(e => e.Version === latestVersion) as IManifest;
   //
 
-  const tags = latestManifest.Tags == null ? [] : latestManifest.Tags.split(",");
+  const tags = latestManifest.Tags == null ? [] : latestManifest.Tags.split(",").map(e => e.trim().toLowerCase());
 
   const newPkg = {
     Id: latestManifest.Id,

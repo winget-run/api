@@ -1,6 +1,6 @@
 import { IBase } from "./base";
 // import {} from "./error";
-import { IPackage } from "./package";
+import { IPackage, IPackageQueryOptions } from "./package";
 import { IManifest } from "./manifest";
 import { StatsResolution, IStats, IStatsSeries } from "./stats";
 import {
@@ -24,6 +24,7 @@ import {
 export {
   IBase,
   IPackage,
+  IPackageQueryOptions,
   IManifest,
   StatsResolution,
   IStats,

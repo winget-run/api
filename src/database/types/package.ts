@@ -23,7 +23,16 @@ interface IPackage extends IBase {
   UpdatedAt: Date;
 }
 
+interface IPackageQueryOptions {
+  query?: string;
+  name?: string;
+  publisher?: string;
+  description?: string;
+  tags?: string[];
+}
+
 export {
   // eslint-disable-next-line import/prefer-default-export
   IPackage,
+  IPackageQueryOptions,
 };

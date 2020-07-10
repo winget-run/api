@@ -21,6 +21,16 @@ const escapeRegex = (str: string): string => str.replace(/[.*+\-?^${}()|[\]\\]/g
 class ManifestService extends BaseService<ManifestModel> {
   protected repository = getMongoRepository(ManifestModel);
 
+  // index stuff
+  public async setupIndices(): Promise<void> {
+    await this.repository.createCollectionIndex({
+      Id: 1,
+      Version: 1,
+    }, {
+      unique: true,
+    });
+  }
+
   // checks if there are manifests with a certain id in the database
   // returns an array of the manifests with given id (res.length === 0 -> no manifests)
   public async findManifests(id: string): Promise<ManifestModel[]> {
