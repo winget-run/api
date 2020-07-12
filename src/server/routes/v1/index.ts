@@ -1,15 +1,15 @@
 import { FastifyInstance } from "fastify";
 
-import { ratelimit } from "../plugins";
+import { ratelimit } from "../../plugins";
 import {
   ManifestService,
   ManifestModel,
   addOrUpdatePackage,
   rebuildPackage,
-} from "../../database";
+} from "../../../database";
 
-import ghService from "../ghService/index";
-import { SortOrder } from "../../database/types";
+import ghService from "../../ghService/index";
+import { SortOrder } from "../../../database/types";
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
