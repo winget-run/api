@@ -75,20 +75,6 @@ class PackageService extends BaseService<PackageModel> {
     const { query } = queryOptions;
 
     if (query != null && optionCount === 1) {
-      // const results = await Promise.all([
-      //   this.repository.find({
-      //     "Latest.Name": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
-      //   } as unknown as undefined),
-      //   this.repository.find({
-      //     "Latest.Publisher": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
-      //   } as unknown as undefined),
-      //   this.repository.find({
-      //     "Latest.Description": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
-      //   } as unknown as undefined),
-      // ]);
-
-      // const pkgs = results.flat().filter((e, i, a) => a.findIndex(f => e.Id === f.Id) === i); // .slice(3);
-
       const ngrams = generateNGrams(query, 2);
 
       const pkgs = await this.repository.aggregate([
