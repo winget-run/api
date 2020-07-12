@@ -19,6 +19,14 @@ interface IPackage extends IBase {
   IconUrl?: string;
   Banner?: string;
 
+  // search
+  NGrams: {
+    Name: string;
+    Publisher: string;
+    Tags?: string;
+    Description?: string;
+  };
+
   // stats
   UpdatedAt: Date;
 }

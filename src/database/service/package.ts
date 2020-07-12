@@ -3,6 +3,7 @@ import { getMongoRepository } from "typeorm";
 import BaseService from "./base";
 import PackageModel from "../model/package";
 import { IPackage, IBaseInsert, IPackageQueryOptions } from "../types";
+import { generateNGrams } from "../helpers/package";
 
 // TODO: move this into a helpers file or something
 // imo its important to call this here rather than in the routes, cant trust anyone using
@@ -24,16 +25,18 @@ class PackageService extends BaseService<PackageModel> {
       },
       {
         key: {
-          Name: "text",
-          Publisher: "text",
-          Description: "text",
+          "NGrams.Name": "text",
+          "NGrams.Publisher": "text",
+          "NGrams.Tags": "text",
+          "NGrams.Description": "text",
         },
         // will probably always match the name first
         weights: {
-          Name: 11,
-          Publisher: 5,
-          // for clarity
-          Description: 1,
+          "NGrams.Name": 15,
+          "NGrams.Publisher": 7,
+          "NGrams.Tags": 3,
+          // for clarity (default)
+          "NGrams.Description": 1,
         },
       },
     ]);
@@ -62,7 +65,7 @@ class PackageService extends BaseService<PackageModel> {
     );
   }
 
-  public async searchPackages(queryOptions: IPackageQueryOptions, take: number, skip: number): Promise<IPackage[]> {
+  public async searchPackages(queryOptions: IPackageQueryOptions, take: number, page: number): Promise<IPackage[]> {
     const optionCount = Object.values(queryOptions).filter(e => e != null).length;
     if (optionCount === 0) {
       return [];
@@ -72,19 +75,51 @@ class PackageService extends BaseService<PackageModel> {
     const { query } = queryOptions;
 
     if (query != null && optionCount === 1) {
-      const results = await Promise.all([
-        this.repository.find({
-          "Latest.Name": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
-        } as unknown as undefined),
-        this.repository.find({
-          "Latest.Publisher": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
-        } as unknown as undefined),
-        this.repository.find({
-          "Latest.Description": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
-        } as unknown as undefined),
-      ]);
+      // const results = await Promise.all([
+      //   this.repository.find({
+      //     "Latest.Name": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
+      //   } as unknown as undefined),
+      //   this.repository.find({
+      //     "Latest.Publisher": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
+      //   } as unknown as undefined),
+      //   this.repository.find({
+      //     "Latest.Description": new RegExp(`.*${escapeRegex(query)}.*`, "i"),
+      //   } as unknown as undefined),
+      // ]);
 
-      const pkgs = results.flat().filter((e, i, a) => a.findIndex(f => e.Id === f.Id) === i); // .slice(3);
+      // const pkgs = results.flat().filter((e, i, a) => a.findIndex(f => e.Id === f.Id) === i); // .slice(3);
+
+      const ngrams = generateNGrams(query, 2);
+
+      const pkgs = await this.repository.aggregate([
+        {
+          $match: {
+            $text: {
+              $search: ngrams.join(" "),
+            },
+          },
+        },
+        {
+          $sort: {
+            score: {
+              $meta: "textScore",
+            },
+          },
+        },
+        {
+          $skip: page * take,
+        },
+        {
+          $limit: take,
+        },
+        {
+          $addFields: {
+            SearchScore: {
+              $meta: "textScore",
+            },
+          },
+        },
+      ]).toArray();
 
       return pkgs;
     }
@@ -112,18 +147,18 @@ class PackageService extends BaseService<PackageModel> {
         },
       }),
       take,
-      skip,
+      skip: page * take,
     } as unknown as undefined);
 
     return pkgs;
   }
 
   // NOTE: shitty typeorm types
-  public async findByPublisher(publisher: string, take: number, skip: number): Promise<IPackage[]> {
+  public async findByPublisher(publisher: string, take: number, page: number): Promise<IPackage[]> {
     const pkgs = await this.repository.find({
       "Latest.Publisher": new RegExp(`.*${escapeRegex(publisher)}.*`),
       take,
-      skip,
+      skip: page * take,
     } as unknown as undefined);
 
     return pkgs;

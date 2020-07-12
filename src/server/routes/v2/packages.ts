@@ -1,6 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { PackageService } from "../../../database";
 
+const DEFAULT_PAGE = 0;
+const DEFAULT_PAGE_SIZE = 12;
 const MAX_PAGE_SIZE = 24;
 
 const packageSchema = {
@@ -32,7 +34,7 @@ const packageSchema = {
         min: 1,
         max: MAX_PAGE_SIZE,
       },
-      skip: {
+      page: {
         type: "number",
         min: 0,
       },
@@ -58,7 +60,7 @@ const publisherPackageSchema = {
         type: "number",
         min: 1,
       },
-      skip: {
+      page: {
         type: "number",
         min: 0,
       },
@@ -95,8 +97,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       publisher,
       description,
       tags,
-      take,
-      skip,
+      take = DEFAULT_PAGE_SIZE,
+      page = DEFAULT_PAGE,
     } = request.query;
 
     const pkgs = await packageService.searchPackages({
@@ -105,7 +107,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       publisher,
       description,
       ...(tags == null ? {} : { tags: tags.split(",") }),
-    }, take, skip);
+    }, take, page);
 
     return {
       Packages: pkgs,
@@ -114,9 +116,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   fastify.get("/:publisher", { schema: publisherPackageSchema }, async request => {
     const { publisher } = request.params;
-    const { take, skip } = request.query;
+    const { take = DEFAULT_PAGE_SIZE, page = DEFAULT_PAGE } = request.query;
 
-    const pkgs = await packageService.findByPublisher(publisher, take, skip);
+    const pkgs = await packageService.findByPublisher(publisher, take, page);
 
     return {
       Packages: pkgs,

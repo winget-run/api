@@ -3,9 +3,14 @@ import path from "path";
 
 import { createConnection } from "typeorm";
 
-import { PackageModel, ManifestModel } from "./model";
-import { IPackage, IManifest } from "./types";
-import { PackageService, ManifestService } from "./service";
+import { PackageModel, ManifestModel, StatsModel } from "./model";
+import { PackageService, ManifestService, StatsService } from "./service";
+import {
+  IPackage,
+  IManifest,
+  StatsResolution,
+  IStats,
+} from "./types";
 import {
   padSemver,
   sortSemver,
@@ -68,8 +73,16 @@ const connect = async (): Promise<void> => {
     entities: [
       PackageModel,
       ManifestModel,
+      StatsModel,
     ],
   });
+
+  // ensure appropriate indexes (since the typeorm way to do it is broke)
+  const manifestService = new ManifestService();
+  manifestService.setupIndices();
+
+  const packageService = new PackageService();
+  packageService.setupIndices();
 
   console.log(`connected to mongo; ${MONGO_HOST}/${MONGO_DB}`);
 };
@@ -84,6 +97,11 @@ export {
   ManifestModel,
   IManifest,
   ManifestService,
+
+  StatsModel,
+  StatsResolution,
+  IStats,
+  StatsService,
 
   padSemver,
   sortSemver,
