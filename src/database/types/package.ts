@@ -39,8 +39,14 @@ interface IPackageQueryOptions {
   tags?: string[];
 }
 
+enum PackageSortFields {
+  LatestName = "Latest.Name",
+  UpdatedAt = "UpdatedAt",
+}
+
 export {
   // eslint-disable-next-line import/prefer-default-export
   IPackage,
   IPackageQueryOptions,
+  PackageSortFields,
 };

@@ -33,25 +33,27 @@ class ManifestService extends BaseService<ManifestModel> {
 
   // checks if there are manifests with a certain id in the database
   // returns an array of the manifests with given id (res.length === 0 -> no manifests)
-  public async findManifests(id: string): Promise<ManifestModel[]> {
-    const manifests = await this.find({
-      filters: {
-        Id: id,
-      },
-    });
+  // public async findManifests(id: string): Promise<ManifestModel[]> {
+  //   const manifests = await this.find({
+  //     filters: {
+  //       Id: id,
+  //     },
+  //   });
 
-    return manifests;
-  }
+  //   return manifests;
+  // }
 
   // checks if there is a manifest with the given id and version (should only be 1)
   // returns the manifest (if existent) or null (if non-existent)
-  public async findManifestVersion(id: string, version: string): Promise<ManifestModel | undefined> {
+  public async findManifestVersion(id: string, version: string): Promise<Omit<IManifest, "_id"> | undefined> {
     const manifest = await this.findOne({
       filters: {
         Id: id,
         Version: version,
       },
     });
+
+    delete manifest?._id;
 
     return manifest;
   }

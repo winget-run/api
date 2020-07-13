@@ -22,10 +22,14 @@ const manifestSchema = {
 export default async (fastify: FastifyInstance): Promise<void> => {
   const manifestService = new ManifestService();
 
-  fastify.get("/:id/:version", { schema: manifestSchema }, async request => {
+  fastify.get("/:id/:version", { schema: manifestSchema }, async (request, response) => {
     const { id, version } = request.params;
 
     const manifest = await manifestService.findManifestVersion(id, version);
+    if (manifest == null) {
+      response.code(404);
+      return new Error("manifest not found");
+    }
 
     return {
       Manifest: manifest,

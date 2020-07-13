@@ -2,8 +2,14 @@ import { getMongoRepository } from "typeorm";
 
 import BaseService from "./base";
 import PackageModel from "../model/package";
-import { IPackage, IBaseInsert, IPackageQueryOptions } from "../types";
 import { generateNGrams } from "../helpers/package";
+import {
+  IPackage,
+  IBaseInsert,
+  IPackageQueryOptions,
+  SortOrder,
+  PackageSortFields,
+} from "../types";
 
 // TODO: move this into a helpers file or something
 // imo its important to call this here rather than in the routes, cant trust anyone using
@@ -65,95 +71,185 @@ class PackageService extends BaseService<PackageModel> {
     );
   }
 
-  public async searchPackages(queryOptions: IPackageQueryOptions, take: number, page: number): Promise<IPackage[]> {
-    const optionCount = Object.values(queryOptions).filter(e => e != null).length;
-    if (optionCount === 0) {
-      return [];
+  // TODO: temp soz, will fix
+  // eslint-disable-next-line max-len
+  public async searchPackages(queryOptions: IPackageQueryOptions, take: number, page: number, sort: PackageSortFields | "SearchScore", order: SortOrder): Promise<[Omit<IPackage, "_id">[], number]> {
+    const optionFields = Object.values(queryOptions).filter(e => e != null);
+
+    // error if query AND another field is set (query only requirement)
+    if (queryOptions.query != null && optionFields.length > 1) {
+      throw new Error("no other queryOptions should be set when 'query' is non-null");
     }
 
-    // only use query if its the only field set (would not make sense if more specific fields are set)
-    const { query } = queryOptions;
-
-    if (query != null && optionCount === 1) {
-      const ngrams = generateNGrams(query, 2);
-
-      const pkgs = await this.repository.aggregate([
-        {
-          $match: {
-            $text: {
-              $search: ngrams.join(" "),
-            },
-          },
-        },
-        {
-          $sort: {
-            score: {
-              $meta: "textScore",
-            },
-          },
-        },
-        {
-          $skip: page * take,
-        },
-        {
-          $limit: take,
-        },
-        {
-          $addFields: {
-            SearchScore: {
-              $meta: "textScore",
-            },
-          },
-        },
-      ]).toArray();
-
-      return pkgs;
+    if (optionFields.length === 0) {
+      return [[], 0];
     }
 
-    const {
-      name,
-      publisher,
-      description,
-      tags,
-    } = queryOptions;
+    const ngramQuery = optionFields.map((e: string | string[]) => {
+      if (e instanceof Array) {
+        return e.map(f => generateNGrams(f, 2).join(" ")).join(" ");
+      }
+      return generateNGrams(e, 2).join(" ");
+    }).join(" ");
 
-    const pkgs = await this.repository.find({
-      ...(name == null ? {} : {
-        "Latest.Name": new RegExp(`.*${escapeRegex(name)}.*`, "i"),
-      }),
-      ...(publisher == null ? {} : {
-        "Latest.Publisher": new RegExp(`.*${escapeRegex(publisher)}.*`, "i"),
-      }),
-      ...(description == null ? {} : {
-        "Latest.Description": new RegExp(`.*${escapeRegex(description)}.*`, "i"),
-      }),
-      ...(tags == null || tags.length === 0 ? {} : {
-        "Latest.Tags": {
-          $all: tags.map(e => e.trim().toLowerCase()),
+    const pkgs = await this.repository.aggregate([
+      {
+        $match: {
+          $and: [
+            {
+              $text: {
+                $search: ngramQuery,
+              },
+            },
+            {
+              // NOTE: tags will be used to bump up the weight of searches but wont be
+              // checked against a regex, would have to exact match to make sense and thats
+              // just not worth it (perf vs how much it would improve results)
+              $or: [
+                // at least 1 should be set unless someone fucked up
+                // NOTE: the value passed into escapeRegex should never be null without the '?? ""' but ts complained
+                ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
+                  {
+                    "Latest.Name": {
+                      $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.name ?? "")}.*`, "i"),
+                    },
+                  },
+                ]),
+                ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
+                  {
+                    "Latest.Publisher": {
+                      $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.publisher ?? "")}.*`, "i"),
+                    },
+                  },
+                ]),
+                ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
+                  {
+                    "Latest.Description": {
+                      $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.description ?? "")}.*`, "i"),
+                    },
+                  },
+                ]),
+              ],
+            },
+          ],
         },
-      }),
-      take,
-      skip: page * take,
-    } as unknown as undefined);
+      },
+      {
+        $facet: {
+          total: [
+            {
+              $count: "count",
+            },
+          ],
+          results: [
+            {
+              $sort: {
+                ...(sort === "SearchScore" ? {
+                  score: {
+                    $meta: "textScore",
+                  },
+                } : {
+                  [sort]: order,
+                }),
+                // in case there are multiple docs with the same date
+                Id: -1,
+              },
+            },
+            {
+              $skip: page * take,
+            },
+            {
+              $limit: take,
+            },
+            {
+              $unset: "_id",
+            },
+            {
+              $addFields: {
+                SearchScore: {
+                  $meta: "textScore",
+                },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unwind: "$total",
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            total: "$total.count",
+            results: "$results",
+          },
+        },
+      },
+    ]).next();
 
-    return pkgs;
+    return [pkgs?.results ?? [], pkgs?.total ?? 0];
   }
 
   // NOTE: shitty typeorm types
-  public async findByPublisher(publisher: string, take: number, page: number): Promise<IPackage[]> {
-    const pkgs = await this.repository.find({
-      "Latest.Publisher": new RegExp(`.*${escapeRegex(publisher)}.*`),
-      take,
-      skip: page * take,
-    } as unknown as undefined);
+  // yes i have to use the aggregation pipeline unfortunately, cunty typeorm returns documents
+  // even if they dont match if i specify any of take, skip, order, etc. actually fucking RETARDED
+  // eslint-disable-next-line max-len
+  public async findByPublisher(publisher: string, take: number, page: number, sort: PackageSortFields, order: SortOrder): Promise<[Omit<IPackage, "_id">[], number]> {
+    const pkgs = await this.repository.aggregate([
+      {
+        $match: {
+          Id: {
+            $regex: new RegExp(`^${publisher}\\.`),
+          },
+        },
+      },
+      {
+        $facet: {
+          total: [
+            {
+              $count: "count",
+            },
+          ],
+          results: [
+            {
+              $sort: {
+                [sort]: order,
+              },
+            },
+            {
+              $skip: page * take,
+            },
+            {
+              $limit: take,
+            },
+            {
+              $unset: "_id",
+            },
+          ],
+        },
+      },
+      {
+        $unwind: "$total",
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            total: "$total.count",
+            results: "$results",
+          },
+        },
+      },
+    ]).next();
 
-    return pkgs;
+    return [pkgs?.results ?? [], pkgs?.total ?? 0];
   }
 
-  public async findSinglePackage(publisher: string, packageName: string): Promise<IPackage | undefined> {
+  public async findSinglePackage(publisher: string, packageName: string): Promise<Omit<IPackage, "_id"> | undefined> {
     const pkg = await this.repository.findOne({
       Id: `${publisher}.${packageName}`,
     });
+
+    delete pkg?._id;
 
     return pkg;
   }
