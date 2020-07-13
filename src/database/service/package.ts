@@ -81,10 +81,26 @@ class PackageService extends BaseService<PackageModel> {
       throw new Error("no other queryOptions should be set when 'query' is non-null");
     }
 
+    // dont run the complicated shit if theres no need to
     if (optionFields.length === 0) {
-      return [[], 0];
+      const allPkgs = await this.repository.findAndCount({
+        take,
+        skip: page * take,
+        order: {
+          [sort]: order,
+        },
+      });
+
+      return [
+        allPkgs[0].map(e => {
+          delete e._id;
+          return e;
+        }),
+        allPkgs[1],
+      ];
     }
 
+    // cant text search single fields, there can only be one text index per collection
     const ngramQuery = optionFields.map((e: string | string[]) => {
       if (e instanceof Array) {
         return e.map(f => generateNGrams(f, 2).join(" ")).join(" ");
@@ -115,14 +131,14 @@ class PackageService extends BaseService<PackageModel> {
                     },
                   },
                 ]),
-                ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
+                ...((queryOptions.query ?? queryOptions.publisher) == null ? [] : [
                   {
                     "Latest.Publisher": {
                       $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.publisher ?? "")}.*`, "i"),
                     },
                   },
                 ]),
-                ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
+                ...((queryOptions.query ?? queryOptions.description) == null ? [] : [
                   {
                     "Latest.Description": {
                       $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.description ?? "")}.*`, "i"),

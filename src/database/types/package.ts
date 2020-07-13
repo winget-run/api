@@ -41,6 +41,7 @@ interface IPackageQueryOptions {
 
 enum PackageSortFields {
   LatestName = "Latest.Name",
+  LatestPublisher = "Latest.Publisher",
   UpdatedAt = "UpdatedAt",
 }
 
