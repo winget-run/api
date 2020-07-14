@@ -1,7 +1,7 @@
 import { IBase } from ".";
 
 enum StatsResolution {
-  Hour = "hour",
+  // Hour = "hour",
   Day = "day",
   Week = "isoWeek",
   Month = "month",

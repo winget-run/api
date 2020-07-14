@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { PackageService } from "../../../database";
+import { PackageService, StatsService } from "../../../database";
 
 const DEFAULT_PAGE = 0;
 const DEFAULT_PAGE_SIZE = 12;
@@ -87,6 +87,7 @@ const singlePackageSchema = {
 
 export default async (fastify: FastifyInstance): Promise<void> => {
   const packageService = new PackageService();
+  const statsService = new StatsService();
 
   // NOTE: query searches name > publisher > description
   // NOTE: tags are exact match, separated by ','
@@ -129,6 +130,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const { publisher, packageName } = request.params;
 
     const pkg = await packageService.findSinglePackage(publisher, packageName);
+
+    statsService.incrementAccessCount(`${publisher}.${packageName}`);
 
     return {
       Package: pkg,

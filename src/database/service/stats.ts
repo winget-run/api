@@ -7,7 +7,7 @@ import { StatsResolution, IStatsSeries, IStats } from "../types";
 
 // 1 hour
 // DO NOT CHANGE THIS!!! (unless you know what youre doing lol)
-const SAMPLING_PERIOD = 1000 * 60 * 60;
+const SAMPLING_PERIOD = 1000 * 60 * 60 * 24;
 
 class StatsService extends BaseService<StatsModel> {
   repository = getMongoRepository(StatsModel);
@@ -43,6 +43,7 @@ class StatsService extends BaseService<StatsModel> {
     // need to do this due to bad typings in typeorm
     // TODO: also yes ik mongo can sort shit, typeorm has no docs for this and i cant be fucked rn
     const stats = await this.repository.find({
+      PackageId: packageId,
       Period: {
         $gte: startPeriod,
         $lte: endPeriod,

@@ -1,6 +1,7 @@
 node_modules
 dist
 coverage
+.pnp.*
 .env
 telepresence.log
 yarn-error.log
