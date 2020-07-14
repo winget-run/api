@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { PackageService, StatsService } from "../../../database";
+import { PackageSortFields, SortOrder } from "../../../database/types";
 
 const DEFAULT_PAGE = 0;
 const DEFAULT_PAGE_SIZE = 12;
@@ -38,6 +39,14 @@ const packageSchema = {
         type: "number",
         min: 0,
       },
+      sort: {
+        type: "string",
+        enum: Object.values(PackageSortFields),
+      },
+      order: {
+        type: "number",
+        enum: [...Object.values(SortOrder), "SearchScore"],
+      },
     },
   },
 };
@@ -63,6 +72,14 @@ const publisherPackageSchema = {
       page: {
         type: "number",
         min: 0,
+      },
+      sort: {
+        type: "string",
+        enum: Object.values(PackageSortFields),
+      },
+      order: {
+        type: "number",
+        enum: Object.values(SortOrder),
       },
     },
   },
@@ -100,36 +117,49 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       tags,
       take = DEFAULT_PAGE_SIZE,
       page = DEFAULT_PAGE,
+      sort = "SearchScore",
+      order = SortOrder.ASCENDING,
     } = request.query;
 
-    const pkgs = await packageService.searchPackages({
+    const [pkgs, total] = await packageService.searchPackages({
       query,
       name,
       publisher,
       description,
       ...(tags == null ? {} : { tags: tags.split(",") }),
-    }, take, page);
+    }, take, page, sort, order);
 
     return {
       Packages: pkgs,
+      Total: total,
     };
   });
 
   fastify.get("/:publisher", { schema: publisherPackageSchema }, async request => {
     const { publisher } = request.params;
-    const { take = DEFAULT_PAGE_SIZE, page = DEFAULT_PAGE } = request.query;
+    const {
+      take = DEFAULT_PAGE_SIZE,
+      page = DEFAULT_PAGE,
+      sort = PackageSortFields.LatestName,
+      order = SortOrder.ASCENDING,
+    } = request.query;
 
-    const pkgs = await packageService.findByPublisher(publisher, take, page);
+    const [pkgs, total] = await packageService.findByPublisher(publisher, take, page, sort, order);
 
     return {
       Packages: pkgs,
+      Total: total,
     };
   });
 
-  fastify.get("/:publisher/:packageName", { schema: singlePackageSchema }, async request => {
+  fastify.get("/:publisher/:packageName", { schema: singlePackageSchema }, async (request, response) => {
     const { publisher, packageName } = request.params;
 
     const pkg = await packageService.findSinglePackage(publisher, packageName);
+    if (pkg == null) {
+      response.code(404);
+      return new Error("package not found");
+    }
 
     statsService.incrementAccessCount(`${publisher}.${packageName}`);
 
