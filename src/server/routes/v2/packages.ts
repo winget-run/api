@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { PackageService } from "../../../database";
-import { SortOrder, PackageSortFields } from "../../../database/types";
+import { PackageService, StatsService } from "../../../database";
+import { PackageSortFields, SortOrder } from "../../../database/types";
 
 const DEFAULT_PAGE = 0;
 const DEFAULT_PAGE_SIZE = 12;
@@ -104,6 +104,7 @@ const singlePackageSchema = {
 
 export default async (fastify: FastifyInstance): Promise<void> => {
   const packageService = new PackageService();
+  const statsService = new StatsService();
 
   // NOTE: query searches name > publisher > description
   // NOTE: tags are exact match, separated by ','
@@ -159,6 +160,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       response.code(404);
       return new Error("package not found");
     }
+
+    statsService.incrementAccessCount(`${publisher}.${packageName}`);
 
     return {
       Package: pkg,

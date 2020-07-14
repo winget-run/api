@@ -25,6 +25,8 @@ const statsSchema = {
 };
 
 export default async (fastify: FastifyInstance): Promise<void> => {
+  const statsService = new StatsService();
+
   fastify.get("/", { schema: statsSchema }, async request => {
     const {
       packageId,
@@ -33,7 +35,6 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       before = (new Date()).toISOString(),
     } = request.query;
 
-    const statsService = new StatsService();
     const stats = await statsService.getPackageStats(packageId, resolution, new Date(after), new Date(before));
 
     return {
