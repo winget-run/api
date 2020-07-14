@@ -139,7 +139,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const {
       take = DEFAULT_PAGE_SIZE,
       page = DEFAULT_PAGE,
-      sort = "Latest.Name",
+      sort = PackageSortFields.LatestName,
       order = SortOrder.ASCENDING,
     } = request.query;
 
