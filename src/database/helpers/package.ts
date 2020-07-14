@@ -49,13 +49,19 @@ const sortSemver = (a: string, b: string): number => {
   return 0;
 };
 
+const generateMetaphones = (word: string): string[] => {
+  const metaphones = DoubleMetaphone.process(word);
+  if (metaphones[0] === metaphones[1]) {
+    return metaphones.slice(1);
+  }
+
+  return metaphones;
+};
+
 const generateNGrams = (word: string, min: number): string[] => {
   const ngrams = [];
 
-  const encodings = DoubleMetaphone.process(word);
-  if (encodings[0] === encodings[1]) {
-    encodings.pop();
-  }
+  const encodings = generateMetaphones(word);
 
   for (let i = 0; i < encodings.length; i += 1) {
     if (encodings[i].length === Math.max(1, min)) {
@@ -176,4 +182,5 @@ export {
   addOrUpdatePackage,
   removePackage,
   generateNGrams,
+  generateMetaphones,
 };

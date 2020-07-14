@@ -9,13 +9,7 @@ import {
   IBaseFilters,
   SortOrder,
 } from "../types";
-import { mapInternalFilters } from "../helpers";
-
-// TODO: move this into a helpers file or something
-// imo its important to call this here rather than in the routes, cant trust anyone using
-// the PackageService api to know that regex needs to be escaped
-// mdn: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
-const escapeRegex = (str: string): string => str.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
+import { mapInternalFilters, escapeRegex } from "../helpers";
 
 // yes ik, dependency injection, i swear i will later
 class ManifestService extends BaseService<ManifestModel> {
@@ -123,8 +117,14 @@ class ManifestService extends BaseService<ManifestModel> {
   // (give or take a few), also make the default a const and move it or make the opts thing an object <--- THIS
   // TODO: allow multiple field sort
   // TODO: remove this max len thing
-  // eslint-disable-next-line max-len
-  private async findPackages(filters: IBaseFilters<ManifestModel>, take: number, skip = 0, sort = "Name", order = SortOrder.ASCENDING): Promise<[ManifestModel[], number]> {
+  private async findPackages(
+    filters: IBaseFilters<ManifestModel>,
+    take: number,
+    skip = 0,
+    sort = "Name",
+    order = SortOrder.ASCENDING,
+  ): Promise<[ManifestModel[], number]> {
+    //
     try {
       const internalFilters = mapInternalFilters(filters);
 

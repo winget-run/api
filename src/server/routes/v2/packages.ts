@@ -47,6 +47,15 @@ const packageSchema = {
         type: "number",
         enum: [...Object.values(SortOrder), "SearchScore"],
       },
+      splitQuery: {
+        type: "boolean",
+      },
+      partialMatch: {
+        type: "boolean",
+      },
+      ensureContains: {
+        type: "boolean",
+      },
     },
   },
 };
@@ -118,7 +127,17 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       page = DEFAULT_PAGE,
       sort = "SearchScore",
       order = SortOrder.ASCENDING,
+      splitQuery = true,
+      partialMatch = false,
+      ensureContains = false,
     } = request.query;
+
+    // NOTE: fastify auto parses it as a boolean (yay!)
+    const searchOptions = {
+      splitQuery,
+      partialMatch,
+      ensureContains,
+    };
 
     const [pkgs, total] = await packageService.searchPackages({
       query,
@@ -126,7 +145,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       publisher,
       description,
       ...(tags == null ? {} : { tags: tags.split(",") }),
-    }, take, page, sort, order);
+    }, take, page, sort, order, searchOptions);
 
     return {
       Packages: pkgs,

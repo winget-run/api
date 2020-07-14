@@ -2,20 +2,20 @@ import { getMongoRepository } from "typeorm";
 
 import BaseService from "./base";
 import PackageModel from "../model/package";
-import { generateNGrams } from "../helpers/package";
+import {
+  generateMetaphones,
+  generateNGrams,
+  dedupe,
+  escapeRegex,
+} from "../helpers";
 import {
   IPackage,
   IBaseInsert,
   IPackageQueryOptions,
   SortOrder,
   PackageSortFields,
+  IPackageSearchOptions,
 } from "../types";
-
-// TODO: move this into a helpers file or something
-// imo its important to call this here rather than in the routes, cant trust anyone using
-// the PackageService api to know that regex needs to be escaped
-// mdn: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
-const escapeRegex = (str: string): string => str.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
 
 class PackageService extends BaseService<PackageModel> {
   repository = getMongoRepository(PackageModel);
@@ -71,9 +71,15 @@ class PackageService extends BaseService<PackageModel> {
     );
   }
 
-  // TODO: temp soz, will fix
-  // eslint-disable-next-line max-len
-  public async searchPackages(queryOptions: IPackageQueryOptions, take: number, page: number, sort: PackageSortFields | "SearchScore", order: SortOrder): Promise<[Omit<IPackage, "_id">[], number]> {
+  public async searchPackages(
+    queryOptions: IPackageQueryOptions,
+    take: number,
+    page: number,
+    sort: PackageSortFields | "SearchScore",
+    order: SortOrder,
+    searchOptions: IPackageSearchOptions,
+  ): Promise<[Omit<IPackage, "_id">[], number]> {
+    //
     const optionFields = Object.values(queryOptions).filter(e => e != null);
 
     // error if query AND another field is set (query only requirement)
@@ -100,13 +106,29 @@ class PackageService extends BaseService<PackageModel> {
       ];
     }
 
-    // cant text search single fields, there can only be one text index per collection
-    const ngramQuery = optionFields.map((e: string | string[]) => {
-      if (e instanceof Array) {
-        return e.map(f => generateNGrams(f, 2).join(" ")).join(" ");
+    const processQueryInput = searchOptions.partialMatch === true ? (word: string): string[] => generateNGrams(word, 2) : generateMetaphones;
+
+    const query = dedupe(optionFields.flat().map((e: string) => {
+      if (searchOptions.splitQuery === true) {
+        return e.split(" ").map(f => processQueryInput(f)).flat();
       }
-      return generateNGrams(e, 2).join(" ");
-    }).join(" ");
+      return processQueryInput(e);
+    }).flat()).join(" ");
+
+    // these vars can probs be set in a much nicer way (refactoring)
+    const nameQuery = queryOptions.query ?? queryOptions.name ?? "";
+    const publisherQuery = queryOptions.query ?? queryOptions.publisher ?? "";
+    const descriptionQuery = queryOptions.query ?? queryOptions.description ?? "";
+
+    const nameRegex = new RegExp(`.*(${
+      searchOptions.splitQuery === false ? escapeRegex(nameQuery) : nameQuery.split(" ").map(e => escapeRegex(e)).join("|")
+    }).*`, "i");
+    const publisherRegex = new RegExp(`.*(${
+      searchOptions.splitQuery === false ? escapeRegex(publisherQuery) : publisherQuery.split(" ").map(e => escapeRegex(e)).join("|")
+    }).*`, "i");
+    const descriptionRegex = new RegExp(`.*(${
+      searchOptions.splitQuery === false ? escapeRegex(descriptionQuery) : descriptionQuery.split(" ").map(e => escapeRegex(e)).join("|")
+    }).*`, "i");
 
     const pkgs = await this.repository.aggregate([
       {
@@ -114,39 +136,41 @@ class PackageService extends BaseService<PackageModel> {
           $and: [
             {
               $text: {
-                $search: ngramQuery,
+                $search: query,
               },
             },
-            {
-              // NOTE: tags will be used to bump up the weight of searches but wont be
-              // checked against a regex, would have to exact match to make sense and thats
-              // just not worth it (perf vs how much it would improve results)
-              $or: [
-                // at least 1 should be set unless someone fucked up
-                // NOTE: the value passed into escapeRegex should never be null without the '?? ""' but ts complained
-                ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
-                  {
-                    "Latest.Name": {
-                      $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.name ?? "")}.*`, "i"),
+            ...(searchOptions.ensureContains === false ? [] : [
+              {
+                // NOTE: tags will be used to bump up the weight of searches but wont be
+                // checked against a regex, would have to exact match to make sense and thats
+                // just not worth it (perf vs how much it would improve results)
+                $or: [
+                  // at least 1 should be set unless someone fucked up
+                  // NOTE: the value passed into escapeRegex should never be null without the '?? ""' but ts complained
+                  ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
+                    {
+                      "Latest.Name": {
+                        $regex: nameRegex,
+                      },
                     },
-                  },
-                ]),
-                ...((queryOptions.query ?? queryOptions.publisher) == null ? [] : [
-                  {
-                    "Latest.Publisher": {
-                      $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.publisher ?? "")}.*`, "i"),
+                  ]),
+                  ...((queryOptions.query ?? queryOptions.publisher) == null ? [] : [
+                    {
+                      "Latest.Publisher": {
+                        $regex: publisherRegex,
+                      },
                     },
-                  },
-                ]),
-                ...((queryOptions.query ?? queryOptions.description) == null ? [] : [
-                  {
-                    "Latest.Description": {
-                      $regex: new RegExp(`.*${escapeRegex(queryOptions.query ?? queryOptions.description ?? "")}.*`, "i"),
+                  ]),
+                  ...((queryOptions.query ?? queryOptions.description) == null ? [] : [
+                    {
+                      "Latest.Description": {
+                        $regex: descriptionRegex,
+                      },
                     },
-                  },
-                ]),
-              ],
-            },
+                  ]),
+                ],
+              },
+            ]),
           ],
         },
       },
@@ -209,8 +233,14 @@ class PackageService extends BaseService<PackageModel> {
   // NOTE: shitty typeorm types
   // yes i have to use the aggregation pipeline unfortunately, cunty typeorm returns documents
   // even if they dont match if i specify any of take, skip, order, etc. actually fucking RETARDED
-  // eslint-disable-next-line max-len
-  public async findByPublisher(publisher: string, take: number, page: number, sort: PackageSortFields, order: SortOrder): Promise<[Omit<IPackage, "_id">[], number]> {
+  public async findByPublisher(
+    publisher: string,
+    take: number,
+    page: number,
+    sort: PackageSortFields,
+    order: SortOrder,
+  ): Promise<[Omit<IPackage, "_id">[], number]> {
+    //
     const pkgs = await this.repository.aggregate([
       {
         $match: {

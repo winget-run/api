@@ -39,6 +39,12 @@ interface IPackageQueryOptions {
   tags?: string[];
 }
 
+interface IPackageSearchOptions {
+  splitQuery?: boolean;
+  partialMatch?: boolean;
+  ensureContains?: boolean;
+}
+
 enum PackageSortFields {
   LatestName = "Latest.Name",
   LatestPublisher = "Latest.Publisher",
@@ -46,8 +52,8 @@ enum PackageSortFields {
 }
 
 export {
-  // eslint-disable-next-line import/prefer-default-export
   IPackage,
   IPackageQueryOptions,
+  IPackageSearchOptions,
   PackageSortFields,
 };
