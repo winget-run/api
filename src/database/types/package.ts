@@ -11,13 +11,16 @@ interface IPackage extends IBase {
     Publisher: string;
     Tags: string[];
     Description?: string;
+    Homepage?: string;
     License?: string;
+    LicenseUrl?: string;
   };
 
   // extra
   Featured: boolean;
   IconUrl?: string;
   Banner?: string;
+  Logo?: string;
 
   // search
   NGrams: {
