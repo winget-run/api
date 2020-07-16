@@ -18,7 +18,9 @@ class PackageModel extends BaseModel implements IPackage {
     Publisher: string;
     Tags: string[];
     Description?: string;
+    Homepage?: string;
     License?: string;
+    LicenseUrl?: string;
   };
 
   // extra
@@ -30,6 +32,9 @@ class PackageModel extends BaseModel implements IPackage {
 
   @Column()
   Banner?: string;
+
+  @Column()
+  Logo?: string;
 
   // search
   @Column()

@@ -81,6 +81,8 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
   const manifestService = new ManifestService();
   const packageService = new PackageService();
 
+  // TODO: optimisation, dont fetch every manifest for a package every
+  // single time (can get unweildy when more versions are added)
   const manifests = await manifestService.find({
     filters: {
       Id: id,
@@ -131,7 +133,9 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
       Publisher: latestManifest.Publisher,
       Tags: tags,
       Description: latestManifest.Description,
+      Homepage: latestManifest.Homepage,
       License: latestManifest.License,
+      LicenseUrl: latestManifest.LicenseUrl,
     },
 
     Featured: false,
