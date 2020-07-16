@@ -78,7 +78,7 @@ class PackageService extends BaseService<PackageModel> {
     sort: PackageSortFields | "SearchScore",
     order: SortOrder,
     searchOptions: IPackageSearchOptions,
-  ): Promise<[Omit<IPackage, "_id">[], number]> {
+  ): Promise<[Omit<IPackage & { SearchScore: number }, "_id">[], number]> {
     //
     const optionFields = Object.values(queryOptions).filter(e => e != null);
 
@@ -87,21 +87,36 @@ class PackageService extends BaseService<PackageModel> {
       throw new Error("no other queryOptions should be set when 'query' is non-null");
     }
 
+    // error if non-query fields are set and ensureContains is false, in which case
+    // all non-query fields behave like a qquery and may be misleading
+    if (queryOptions.query == null && optionFields.length >= 1 && searchOptions.ensureContains === false) {
+      throw new Error("non-query search parameters are redundant if ensureContains is false");
+    }
+
     // dont run the complicated shit if theres no need to
     if (optionFields.length === 0) {
       const allPkgs = await this.repository.findAndCount({
         take,
         skip: page * take,
-        order: {
-          [sort]: order,
-        },
+        // SearchScore doesnt apply here (were not doing any searching)
+        ...(sort === "SearchScore" ? {} : {
+          order: {
+            [sort]: order,
+          },
+        }),
       });
 
+      // NOTE: i want to have a search score set to 0 rather than it possibly being
+      // undefined, its just easier to work with for anyone consuming the api
       return [
-        allPkgs[0].map(e => {
-          delete e._id;
-          return e;
-        }),
+        allPkgs[0].map(e => ({
+          ...e,
+          // TODO: this is broke, fix when fixing the uuid issue
+          uuid: undefined as unknown as string,
+
+          _id: undefined,
+          SearchScore: 0,
+        })),
         allPkgs[1],
       ];
     }
