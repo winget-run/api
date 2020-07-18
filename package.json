@@ -46,7 +46,6 @@
     "uuid-mongodb": "^2.3.0"
   },
   "devDependencies": {
-    "@shelf/jest-mongodb": "^1.2.1",
     "@types/bson": "^4.0.2",
     "@types/dotenv": "^8.2.0",
     "@types/jest": "^25.2.3",

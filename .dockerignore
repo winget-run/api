@@ -1,7 +1,6 @@
 node_modules
 dist
 coverage
-globalConfig.json
 .pnp.*
 .env
 telepresence.log
