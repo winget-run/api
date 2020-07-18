@@ -17,6 +17,10 @@ import {
   IPackageSearchOptions,
 } from "../types";
 
+const {
+  NODE_ENV,
+} = process.env;
+
 class PackageService extends BaseService<PackageModel> {
   repository = getMongoRepository(PackageModel);
 
@@ -31,18 +35,18 @@ class PackageService extends BaseService<PackageModel> {
       },
       {
         key: {
-          "NGrams.Name": "text",
-          "NGrams.Publisher": "text",
-          "NGrams.Tags": "text",
-          "NGrams.Description": "text",
+          "Search.Name": "text",
+          "Search.Publisher": "text",
+          "Search.Tags": "text",
+          "Search.Description": "text",
         },
         // will probably always match the name first
         weights: {
-          "NGrams.Name": 15,
-          "NGrams.Publisher": 7,
-          "NGrams.Tags": 3,
+          "Search.Name": 15,
+          "Search.Publisher": 7,
+          "Search.Tags": 3,
           // for clarity (default)
-          "NGrams.Description": 1,
+          "Search.Description": 1,
         },
       },
     ]);
@@ -121,7 +125,13 @@ class PackageService extends BaseService<PackageModel> {
       ];
     }
 
-    const processQueryInput = searchOptions.partialMatch === true ? (word: string): string[] => generateNGrams(word, 2) : generateMetaphones;
+    // NOTE: unlike generateNGrams, i dont want to edit the generateMetaphones fn itself as other ones
+    // call it so something is likely to break (and i dont have unit tests for it so...)
+    // in the future, it would be wise to have general useful fns and ones which transform the results
+    // of those to a less universally usable format (like im doing here with the '_')
+    const processQueryInput = searchOptions.partialMatch === true
+      ? (word: string): string[] => generateNGrams(word, 2)
+      : (word: string): string[] => generateMetaphones(word).map(e => e.padEnd(3, "_"));
 
     const query = dedupe(optionFields.flat().map((e: string) => {
       if (searchOptions.splitQuery === true) {
@@ -176,6 +186,17 @@ class PackageService extends BaseService<PackageModel> {
                       },
                     },
                   ]),
+                  // exact match for tags
+                  // NOTE: im doing lowerCase stuff all over the place currently, in the future it would be better
+                  // to do it in the api routes themselves and leave the db logic universal, so one api ver can be
+                  // case sensitive/insensitive if something like that is required for example
+                  ...((queryOptions.query ?? queryOptions.tags) == null ? [] : [
+                    {
+                      "Latest.Tags": {
+                        $in: queryOptions.query != null ? [queryOptions.query.toLowerCase()] : queryOptions.tags?.map(e => e.toLowerCase()),
+                      },
+                    },
+                  ]),
                   ...((queryOptions.query ?? queryOptions.description) == null ? [] : [
                     {
                       "Latest.Description": {
@@ -217,7 +238,12 @@ class PackageService extends BaseService<PackageModel> {
               $limit: take,
             },
             {
-              $unset: "_id",
+              $unset: [
+                "_id",
+                ...(NODE_ENV === "dev" ? [] : [
+                  "Search",
+                ]),
+              ],
             },
             {
               $addFields: {
