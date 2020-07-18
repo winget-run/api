@@ -23,7 +23,7 @@ interface IPackage extends IBase {
   Logo?: string;
 
   // search
-  NGrams: {
+  Search: {
     Name: string;
     Publisher: string;
     Tags?: string;
@@ -32,6 +32,7 @@ interface IPackage extends IBase {
 
   // stats
   UpdatedAt: Date;
+  CreatedAt: Date;
 }
 
 interface IPackageQueryOptions {

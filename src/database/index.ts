@@ -42,6 +42,8 @@ const {
   MONGO_HOST,
   MONGO_DB,
   MONGO_CERT,
+  // testing
+  MONGO_URL,
 } = process.env;
 
 const connect = async (): Promise<void> => {
@@ -87,8 +89,26 @@ const connect = async (): Promise<void> => {
   console.log(`connected to mongo; ${MONGO_HOST}/${MONGO_DB}`);
 };
 
+// TODO: make the main connect fn more configurable so we dont need a seperate one
+// (mongo update/remake)
+const connectTest = async (): Promise<void> => {
+  await createConnection({
+    type: "mongodb",
+    url: MONGO_URL,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+
+    entities: [
+      PackageModel,
+      ManifestModel,
+      StatsModel,
+    ],
+  });
+};
+
 export {
   connect,
+  connectTest,
 
   PackageModel,
   IPackage,

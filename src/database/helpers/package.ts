@@ -62,9 +62,13 @@ const generateNGrams = (word: string, min: number): string[] => {
   const ngrams = [];
 
   const encodings = generateMetaphones(word);
+  ngrams.push([encodings]);
 
   for (let i = 0; i < encodings.length; i += 1) {
     if (encodings[i].length === Math.max(1, min)) {
+      // TODO: if both encodings will always be the same length, remove this line
+      // see this would be redundant cos im already adding the encodings a couple lines up
+      // BUT idk if one encoding can be longer than other so ill leave it like this for now
       ngrams.push([[encodings[i]]]);
     } else {
       for (let j = min; j < encodings[i].length; j += 1) {
@@ -73,7 +77,7 @@ const generateNGrams = (word: string, min: number): string[] => {
     }
   }
 
-  return ngrams.flat().map(e => e.reduce((a, c) => a + c, "")).filter((e, i, a) => i === a.findIndex(f => e === f));
+  return ngrams.flat().map(e => e.reduce((a, c) => a + c, "")).filter((e, i, a) => i === a.findIndex(f => e === f)).map(e => e.padEnd(3, "_"));
 };
 
 // NOTE: pkg are any additional fields that should be updated or overwritten on the package doc
@@ -140,7 +144,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
 
     Featured: false,
 
-    NGrams: {
+    Search: {
       Name: generateNGrams(latestManifest.Name, NGRAM_MIN).join(" "),
       Publisher: generateNGrams(latestManifest.Publisher, NGRAM_MIN).join(" "),
       Tags: tagNGrams.length === 0 ? undefined : tagNGrams.join(" "),
@@ -148,6 +152,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
     },
 
     UpdatedAt: new Date(),
+    CreatedAt: new Date(),
 
     ...pkg,
   };

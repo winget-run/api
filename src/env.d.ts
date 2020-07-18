@@ -7,6 +7,8 @@ declare namespace NodeJS {
     MONGO_DB: string;
     MONGO_CERT: string;
     MONGO_CA_PATH: string;
+    // set automatically when running tests
+    MONGO_URL: string;
 
     WEB_ADDRESS: string;
     WEBSERVER_LOGGER: string;

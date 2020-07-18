@@ -38,7 +38,7 @@ class PackageModel extends BaseModel implements IPackage {
 
   // search
   @Column()
-  NGrams!: {
+  Search!: {
     Name: string;
     Publisher: string;
     Tags?: string;
@@ -48,6 +48,9 @@ class PackageModel extends BaseModel implements IPackage {
   // stats
   @Column()
   UpdatedAt!: Date;
+
+  @Column()
+  CreatedAt!: Date;
 }
 
 export default PackageModel;
