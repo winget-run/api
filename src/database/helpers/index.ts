@@ -2,6 +2,15 @@ import muuid from "uuid-mongodb";
 // import rfdc from "rfdc";
 
 import {
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
+  generateMetaphones,
+  generateNGrams,
+} from "./package";
+import {
   IBase,
   IBaseFindManyOptions,
   IBaseInternalFindManyOptions,
@@ -71,8 +80,25 @@ const mapInternalFindManyOptions = <T extends IBase>(options: IBaseFindManyOptio
   return mappedOptions;
 };
 
+// NOTE: can make this more complex to work with more data types but this will do for now
+const dedupe = (array: string[]): string[] => array.filter((e, i, a) => i === a.findIndex(f => e === f));
+
+// mdn: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+const escapeRegex = (str: string): string => str.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
+
 export {
   mapInternalFilters,
   mapInternalFindOneOptions,
   mapInternalFindManyOptions,
+
+  padSemver,
+  sortSemver,
+  rebuildPackage,
+  addOrUpdatePackage,
+  removePackage,
+  generateMetaphones,
+  generateNGrams,
+
+  dedupe,
+  escapeRegex,
 };

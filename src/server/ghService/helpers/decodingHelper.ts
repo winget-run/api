@@ -34,6 +34,7 @@ const parsePackageYaml = async (buf: Buffer): Promise<string> => {
     const text = decoder.decode(buf);
 
     parsedYaml = jsYaml.safeLoad(text);
+    parsedYaml.Version = String(parsedYaml.Version);
   } catch (error) {
     console.log(error);
   }

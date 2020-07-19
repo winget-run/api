@@ -1,12 +1,15 @@
 import { FastifyInstance } from "fastify";
 
-import * as _ from "lodash";
-import { ratelimit } from "../plugins";
-import { PackageService } from "../../database";
+import { ratelimit } from "../../plugins";
+import {
+  ManifestService,
+  ManifestModel,
+  addOrUpdatePackage,
+  rebuildPackage,
+} from "../../../database";
 
-import ghService from "../ghService/index";
-import PackageModel from "../../database/model/package";
-import { SortOrder } from "../../database/types";
+import ghService from "../../ghService/index";
+import { SortOrder } from "../../../database/types";
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -21,7 +24,6 @@ const {
   NODE_ENV,
   API_ACCESS_TOKEN,
 } = process.env;
-
 
 // TODO: split this file up
 const autocompleteSchema = {
@@ -195,11 +197,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     const yamls = await ghService.initialPackageImport();
-    const packageService = new PackageService();
+    // const manifestService = new ManifestService();
 
     await Promise.all(
+      // yamls.map((yaml) => manifestService.insertOne(yaml as any)),
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      yamls.map((yaml) => packageService.insertOne(yaml as any)),
+      yamls.map(yaml => addOrUpdatePackage(yaml as any)),
     );
 
     return `imported ${yamls.length} packages at ${new Date().toISOString()}`;
@@ -221,21 +225,24 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const updateYamls = await ghService.updatePackages();
 
     if (updateYamls.length > 0) {
-      const packageService = new PackageService();
+      // const manifestService = new ManifestService();
 
       for (let i = 0; i < updateYamls.length; i += 1) {
-        const pkg = updateYamls[i] as unknown as PackageModel;
+        const pkg = updateYamls[i] as unknown as ManifestModel;
         // eslint-disable-next-line no-await-in-loop
-        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
+        // const pkgExist = await manifestService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
 
-        if (pkgExist !== undefined && pkgExist.Id !== null) {
-          const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
-          if (!equal) {
-            packageService.updateOneById(pkgExist.uuid, pkg);
-          }
-        } else {
-          packageService.insertOne(pkg);
-        }
+        // if (pkgExist !== undefined && pkgExist.Id !== null) {
+        //   const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
+        //   if (!equal) {
+        //     manifestService.updateOneById(pkgExist.uuid, pkg);
+        //   }
+        // } else {
+        //   manifestService.insertOne(pkg);
+        // }
+
+        // eslint-disable-next-line no-await-in-loop
+        await addOrUpdatePackage(pkg);
       }
     }
 
@@ -257,12 +264,14 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const manifests = request.body.manifests as string[];
 
     const yamls = await ghService.manualPackageImport(manifests);
-    const packageService = new PackageService();
+    // const manifestService = new ManifestService();
 
     await Promise.all(
-      yamls.map(async yaml => {
-        const pkg = yaml as unknown as PackageModel;
-        packageService.insertOne(pkg);
+      yamls.map(yaml => {
+        const pkg = yaml as unknown as ManifestModel;
+        // manifestService.insertOne(pkg);
+
+        return addOrUpdatePackage(pkg);
       }),
     );
 
@@ -285,22 +294,25 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const updatedYamls = await ghService.manualPackageUpdate(since, until);
 
     if (updatedYamls.length > 0) {
-      const packageService = new PackageService();
+      // const manifestService = new ManifestService();
 
       for (let i = 0; i < updatedYamls.length; i += 1) {
-        const pkg = updatedYamls[i] as unknown as PackageModel;
+        const pkg = updatedYamls[i] as unknown as ManifestModel;
         // eslint-disable-next-line no-await-in-loop
-        const pkgExist = await packageService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
+        // const pkgExist = await manifestService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
 
-        if (pkgExist !== undefined && pkgExist.Id != null) {
-          const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
+        // if (pkgExist !== undefined && pkgExist.Id != null) {
+        //   const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
 
-          if (!equal) {
-            packageService.updateOneById(pkgExist.uuid, pkg);
-          }
-        } else {
-          packageService.insertOne(pkg);
-        }
+        //   if (!equal) {
+        //     manifestService.updateOneById(pkgExist.uuid, pkg);
+        //   }
+        // } else {
+        //   manifestService.insertOne(pkg);
+        // }
+
+        // eslint-disable-next-line no-await-in-loop
+        await addOrUpdatePackage(pkg);
       }
     }
 
@@ -326,10 +338,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       return "error no yaml found";
     }
 
-    const packageService = new PackageService();
-    const pkg = yaml as unknown as PackageModel;
+    // const manifestService = new ManifestService();
+    const pkg = yaml as unknown as ManifestModel;
 
-    const result = await packageService.insertOne(pkg);
+    // const result = await manifestService.insertOne(pkg);
+    const result = { insertedCount: 1 };
+    await addOrUpdatePackage(pkg);
 
     return `insertted ${result.insertedCount} with ID - ${pkg.Id}`;
   });
@@ -346,33 +360,39 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       return new Error("forbidden");
     }
 
-    const packageService = new PackageService();
+    // const manifestService = new ManifestService();
 
     const { pkgId, iconUrl } = request.body;
 
-    const pkgExist = await packageService.findOne({ filters: { Id: pkgId as string } });
+    // const pkgExist = await manifestService.findOne({ filters: { Id: pkgId as string } });
 
-    if (pkgExist == null || iconUrl === "") {
-      return "package not found, or bad rquest";
-    }
+    // if (pkgExist == null || iconUrl === "") {
+    //   return "package not found, or bad rquest";
+    // }
 
-    pkgExist.IconUrl = iconUrl;
-    const result = await packageService.update({
-      filters: { Id: pkgExist.Id },
-      update: {
-        IconUrl: iconUrl,
-      },
+    // // pkgExist.IconUrl = iconUrl;
+    // const result = await manifestService.update({
+    //   filters: { Id: pkgExist.Id },
+    //   update: {
+    //     // IconUrl: iconUrl,
+    //   },
+    // });
+
+    // not optimised but here we are (will fix later, i rly will)
+    const result = { modifiedCount: 1 };
+    await rebuildPackage(pkgId, {
+      IconUrl: iconUrl,
     });
 
-    return `updated ${result.modifiedCount} iconUrl at ${new Date().toISOString()} for ID - ${pkgExist.Id}`;
+    return `updated ${result.modifiedCount} iconUrl at ${new Date().toISOString()} for ID - ${pkgId}`;
   });
 
   // *-----------------  auto complete ---------------------
   fastify.get("/autocomplete", { schema: autocompleteSchema }, async request => {
     const { query } = request.query;
 
-    const pkgService = new PackageService();
-    const packages = await pkgService.findAutocomplete(query, DEFAULT_AUTOCOMPLETE_SIZE);
+    const manifestService = new ManifestService();
+    const packages = await manifestService.findAutocomplete(query, DEFAULT_AUTOCOMPLETE_SIZE);
 
     return {
       packages,
@@ -390,8 +410,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       page = 0,
     } = request.query;
 
-    const pkgService = new PackageService();
-    const [packages, total] = await pkgService.findByName(name, limit, page, sort, order);
+    const manifestService = new ManifestService();
+    const [packages, total] = await manifestService.findByName(name, limit, page, sort, order);
 
     return {
       packages,
@@ -401,10 +421,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: make it so the filters field is not required
   fastify.get("/list", async () => {
-    const pkgService = new PackageService();
+    const manifestService = new ManifestService();
 
     // TODO: cant deselect _id, maybe add that opt to the service
-    const list = (await pkgService.find({
+    const list = (await manifestService.find({
       filters: {},
       select: [
         "Id",
@@ -422,8 +442,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const { org } = request.params;
     const { page = 0, limit = DEFAULT_PAGE_SIZE } = request.query;
 
-    const pkgService = new PackageService();
-    const [packages, total] = await pkgService.findByOrg(org, limit, page);
+    const manifestService = new ManifestService();
+    const [packages, total] = await manifestService.findByOrg(org, limit, page);
 
     return {
       packages,
@@ -434,8 +454,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   fastify.get("/:org/:pkg", { schema: orgPkgSchema }, async request => {
     const { org, pkg } = request.params;
 
-    const pkgService = new PackageService();
-    const orgPkg = await pkgService.findByPackage(org, pkg);
+    const manifestService = new ManifestService();
+    const orgPkg = await manifestService.findByPackage(org, pkg);
 
     return {
       package: orgPkg,

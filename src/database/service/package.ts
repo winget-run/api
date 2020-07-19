@@ -2,309 +2,343 @@ import { getMongoRepository } from "typeorm";
 
 import BaseService from "./base";
 import PackageModel from "../model/package";
-import { IBaseFilters, SortOrder } from "../types";
-import { mapInternalFilters } from "../helpers";
+import {
+  generateMetaphones,
+  generateNGrams,
+  dedupe,
+  escapeRegex,
+} from "../helpers";
+import {
+  IPackage,
+  IBaseInsert,
+  IPackageQueryOptions,
+  SortOrder,
+  PackageSortFields,
+  IPackageSearchOptions,
+} from "../types";
 
-// TODO: move this into a helpers file or something
-// imo its important to call this here rather than in the routes, cant trust anyone using
-// the PackageService api to know that regex needs to be escaped
-// mdn: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
-const escapeRegex = (str: string): string => str.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
+const {
+  NODE_ENV,
+} = process.env;
 
 class PackageService extends BaseService<PackageModel> {
   repository = getMongoRepository(PackageModel);
 
-  // TODO: this doesnt return all fields on PackageModel, reflect that in the typings
-  // TODO: also especially the stuff with diff versions is totally unlike the model types lmao
-  // TODO: remove the anys
-  // TODO: we shouldnt need the Version toString converstion, this is probably because:
-  // input data is fucked, so fix the input, check why tf our validation didnt work, and remove the conversions
-  // TODO: sort should not be string, it should be limited to fields on PackageModel
-  // (give or take a few), also make the default a const and move it or make the opts thing an object <--- THIS
-  // TODO: allow multiple field sort
-  // TODO: remove this max len thing
-  // eslint-disable-next-line max-len
-  private async findPackages(filters: IBaseFilters<PackageModel>, take: number, skip = 0, sort = "Name", order = SortOrder.ASCENDING): Promise<[PackageModel[], number]> {
-    try {
-      const internalFilters = mapInternalFilters(filters);
-
-      const result = await this.repository.aggregate([
-        {
-          $match: internalFilters,
+  // index stuff
+  public async setupIndices(): Promise<void> {
+    await this.repository.createCollectionIndexes([
+      {
+        key: {
+          Id: 1,
         },
-        {
-          $addFields: {
-            semver: {
-              $reduce: {
-                input: {
-                  $map: {
-                    input: {
-                      $map: {
-                        // if version has less than 4 parts, set the remaining ones to 0
-                        input: {
-                          $zip: {
-                            inputs: [
-                              {
-                                $split: [
-                                  {
-                                    $convert: {
-                                      input: "$Version",
-                                      to: "string",
-                                    },
-                                  },
-                                  ".",
-                                ],
-                              },
-                              {
-                                $range: [
-                                  0,
-                                  4,
-                                ],
-                              },
-                            ],
-                            useLongestLength: true,
-                          },
-                        },
-                        as: "temp",
-                        in: {
-                          $ifNull: [
-                            {
-                              $arrayElemAt: [
-                                "$$temp",
-                                0,
-                              ],
-                            },
-                            "0",
-                          ],
-                        },
+        unique: true,
+      },
+      {
+        key: {
+          "Search.Name": "text",
+          "Search.Publisher": "text",
+          "Search.Tags": "text",
+          "Search.Description": "text",
+        },
+        // will probably always match the name first
+        weights: {
+          "Search.Name": 15,
+          "Search.Publisher": 7,
+          "Search.Tags": 3,
+          // for clarity (default)
+          "Search.Description": 1,
+        },
+      },
+    ]);
+  }
+
+  // create a package if it doesnt already exist (matched id), otherwise update the existing one
+  public async upsertPackage(pkg: IBaseInsert<IPackage>): Promise<void> {
+    const { Id: id } = pkg;
+
+    // shitty validation (until i do better validation) for something that can
+    // potentially seriously fuck shit up
+    if (id == null) {
+      throw new Error("id not set");
+    }
+
+    await this.repository.updateOne(
+      {
+        Id: id,
+      },
+      {
+        $set: pkg,
+      },
+      {
+        upsert: true,
+      },
+    );
+  }
+
+  public async searchPackages(
+    queryOptions: IPackageQueryOptions,
+    take: number,
+    page: number,
+    sort: PackageSortFields | "SearchScore",
+    order: SortOrder,
+    searchOptions: IPackageSearchOptions,
+  ): Promise<[Omit<IPackage & { SearchScore: number }, "_id">[], number]> {
+    //
+    const optionFields = Object.values(queryOptions).filter(e => e != null);
+
+    // error if query AND another field is set (query only requirement)
+    if (queryOptions.query != null && optionFields.length > 1) {
+      throw new Error("no other queryOptions should be set when 'query' is non-null");
+    }
+
+    // error if non-query fields are set and ensureContains is false, in which case
+    // all non-query fields behave like a qquery and may be misleading
+    if (queryOptions.query == null && optionFields.length >= 1 && searchOptions.ensureContains === false) {
+      throw new Error("non-query search parameters are redundant if ensureContains is false");
+    }
+
+    // dont run the complicated shit if theres no need to
+    if (optionFields.length === 0) {
+      const allPkgs = await this.repository.findAndCount({
+        take,
+        skip: page * take,
+        // SearchScore doesnt apply here (were not doing any searching)
+        ...(sort === "SearchScore" ? {} : {
+          order: {
+            [sort]: order,
+          },
+        }),
+      });
+
+      // NOTE: i want to have a search score set to 0 rather than it possibly being
+      // undefined, its just easier to work with for anyone consuming the api
+      return [
+        allPkgs[0].map(e => ({
+          ...e,
+          // TODO: this is broke, fix when fixing the uuid issue
+          uuid: undefined as unknown as string,
+
+          _id: undefined,
+          SearchScore: 0,
+        })),
+        allPkgs[1],
+      ];
+    }
+
+    // NOTE: unlike generateNGrams, i dont want to edit the generateMetaphones fn itself as other ones
+    // call it so something is likely to break (and i dont have unit tests for it so...)
+    // in the future, it would be wise to have general useful fns and ones which transform the results
+    // of those to a less universally usable format (like im doing here with the '_')
+    const processQueryInput = searchOptions.partialMatch === true
+      ? (word: string): string[] => generateNGrams(word, 2)
+      : (word: string): string[] => generateMetaphones(word).map(e => e.padEnd(3, "_"));
+
+    const query = dedupe(optionFields.flat().map((e: string) => {
+      if (searchOptions.splitQuery === true) {
+        return e.split(" ").map(f => processQueryInput(f)).flat();
+      }
+      return processQueryInput(e);
+    }).flat()).join(" ");
+
+    // these vars can probs be set in a much nicer way (refactoring)
+    const nameQuery = queryOptions.query ?? queryOptions.name ?? "";
+    const publisherQuery = queryOptions.query ?? queryOptions.publisher ?? "";
+    const descriptionQuery = queryOptions.query ?? queryOptions.description ?? "";
+
+    const nameRegex = new RegExp(`.*(${
+      searchOptions.splitQuery === false ? escapeRegex(nameQuery) : nameQuery.split(" ").map(e => escapeRegex(e)).join("|")
+    }).*`, "i");
+    const publisherRegex = new RegExp(`.*(${
+      searchOptions.splitQuery === false ? escapeRegex(publisherQuery) : publisherQuery.split(" ").map(e => escapeRegex(e)).join("|")
+    }).*`, "i");
+    const descriptionRegex = new RegExp(`.*(${
+      searchOptions.splitQuery === false ? escapeRegex(descriptionQuery) : descriptionQuery.split(" ").map(e => escapeRegex(e)).join("|")
+    }).*`, "i");
+
+    const pkgs = await this.repository.aggregate([
+      {
+        $match: {
+          $and: [
+            {
+              $text: {
+                $search: query,
+              },
+            },
+            ...(searchOptions.ensureContains === false ? [] : [
+              {
+                // NOTE: tags will be used to bump up the weight of searches but wont be
+                // checked against a regex, would have to exact match to make sense and thats
+                // just not worth it (perf vs how much it would improve results)
+                $or: [
+                  // at least 1 should be set unless someone fucked up
+                  // NOTE: the value passed into escapeRegex should never be null without the '?? ""' but ts complained
+                  ...((queryOptions.query ?? queryOptions.name) == null ? [] : [
+                    {
+                      "Latest.Name": {
+                        $regex: nameRegex,
                       },
                     },
-                    as: "ver",
-                    in: {
-                      $concat: [
-                        {
-                          // get pad string, then pad each ver
-                          $reduce: {
-                            input: {
-                              $range: [
-                                0,
-                                {
-                                  $subtract: [
-                                    // pad to the longest possible len
-                                    // should be 5 chars per section (https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md)
-                                    // but apparently some peeps think that standards dont apply to them...
-                                    // (https://github.com/microsoft/winget-pkgs/blob/master/manifests/Microsoft/dotnet/5.0.100-preview.4.yaml)
-                                    // what a fucking cunt (also the utf-16 encoding wtf)
-                                    5,
-                                    {
-                                      $strLenCP: {
-                                        $convert: {
-                                          input: "$$ver",
-                                          to: "string",
-                                        },
-                                      },
-                                    },
-                                  ],
-                                },
-                              ],
-                            },
-                            initialValue: "",
-                            in: {
-                              $concat: [
-                                "$$value",
-                                "0",
-                              ],
-                            },
-                          },
-                        },
-                        "$$ver",
-                      ],
+                  ]),
+                  ...((queryOptions.query ?? queryOptions.publisher) == null ? [] : [
+                    {
+                      "Latest.Publisher": {
+                        $regex: publisherRegex,
+                      },
                     },
-                  },
-                },
-                initialValue: "",
-                // will leave a . at the end but thats fine for our purposes (sorting)
-                in: {
-                  $concat: [
-                    "$$value",
-                    "$$this",
-                    ".",
-                  ],
-                },
+                  ]),
+                  // exact match for tags
+                  // NOTE: im doing lowerCase stuff all over the place currently, in the future it would be better
+                  // to do it in the api routes themselves and leave the db logic universal, so one api ver can be
+                  // case sensitive/insensitive if something like that is required for example
+                  ...((queryOptions.query ?? queryOptions.tags) == null ? [] : [
+                    {
+                      "Latest.Tags": {
+                        $in: queryOptions.query != null ? [queryOptions.query.toLowerCase()] : queryOptions.tags?.map(e => e.toLowerCase()),
+                      },
+                    },
+                  ]),
+                  ...((queryOptions.query ?? queryOptions.description) == null ? [] : [
+                    {
+                      "Latest.Description": {
+                        $regex: descriptionRegex,
+                      },
+                    },
+                  ]),
+                ],
               },
-              // gets the length of the longest part (wont work cos wed need the global longest el len)
-              // not worth the effort and imma assume the shit will follow standards
-              // $max: {
-              //   $map: {
-              //     input: {
-              //       $split: [
-              //         {
-              //           $convert: {
-              //             input: "$Version",
-              //             to: "string",
-              //           },
-              //         },
-              //         ".",
-              //       ],
-              //     },
-              //     in: {
-              //       $strLenCP: "$$this",
-              //     },
-              //   },
-              // },
-            },
-          },
-        },
-        {
-          $sort: {
-            semver: -1,
-          },
-        },
-        {
-          $group: {
-            _id: "$Id",
-            versions: {
-              $push: "$Version",
-            },
-            latest: {
-              $first: "$$ROOT",
-            },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            Id: "$_id",
-            versions: "$versions",
-            latest: "$latest",
-          },
-        },
-        // get total count of search results
-        {
-          $facet: {
-            total: [
-              {
-                $count: "value",
-              },
-            ],
-            packages: [
-              {
-                $sort: {
-                  [`latest.${sort}`]: order,
-                  Id: -1,
-                },
-              },
-              {
-                $skip: skip * take,
-              },
-              {
-                $limit: take,
-              },
-            ],
-          },
-        },
-        // clean up latest
-        // TODO: these dont actually get deleted
-        {
-          $unset: [
-            "latest._id",
-            "latest.Id",
-
-            // temp value used for sorting by version
-            "latest.semver",
+            ]),
           ],
         },
-        // clean up total
-        {
-          $unwind: "$total",
+      },
+      {
+        $facet: {
+          total: [
+            {
+              $count: "count",
+            },
+          ],
+          results: [
+            {
+              $sort: {
+                ...(sort === "SearchScore" ? {
+                  score: {
+                    $meta: "textScore",
+                  },
+                } : {
+                  [sort]: order,
+                }),
+                // in case there are multiple docs with the same date
+                Id: -1,
+              },
+            },
+            {
+              $skip: page * take,
+            },
+            {
+              $limit: take,
+            },
+            {
+              $unset: [
+                "_id",
+                ...(NODE_ENV === "dev" ? [] : [
+                  "Search",
+                ]),
+              ],
+            },
+            {
+              $addFields: {
+                SearchScore: {
+                  $meta: "textScore",
+                },
+              },
+            },
+          ],
         },
-        {
-          $project: {
-            total: "$total.value",
-            packages: "$packages",
+      },
+      {
+        $unwind: "$total",
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            total: "$total.count",
+            results: "$results",
           },
         },
-      ]).toArray();
+      },
+    ]).next();
 
-      return [result[0]?.packages ?? [], result[0]?.total ?? 0];
-    } catch (error) {
-      throw new Error(error);
-    }
+    return [pkgs?.results ?? [], pkgs?.total ?? 0];
   }
 
-  // TODO: add an option to pass in the fields that you want on the package part of the response (and get rid of those dorty maps)
-  public async findAutocomplete(query: string, take: number): Promise<PackageModel[]> {
-    try {
-      // TODO: remove the any (part of todos from above)
-      const results = Promise.all(
-        [
-          this.findPackages({ Name: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
-          this.findPackages({ Publisher: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
-          this.findPackages({ Description: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
-        ],
-      ).then(e => e
-        .flatMap(f => f[0])
-        .slice(0, take)
-        .filter((f, i, a) => a.findIndex(g => g.Id === f.Id) === i)
-        .map((f: any) => ({
-          ...f,
-          latest: {
-            Version: f.latest.Version,
-            Name: f.latest.Name,
-            Publisher: f.latest.Publisher,
-            Description: f.latest.Description,
-            Homepage: f.latest.Homepage,
-            IconUrl: f.latest.IconUrl,
+  // NOTE: shitty typeorm types
+  // yes i have to use the aggregation pipeline unfortunately, cunty typeorm returns documents
+  // even if they dont match if i specify any of take, skip, order, etc. actually fucking RETARDED
+  public async findByPublisher(
+    publisher: string,
+    take: number,
+    page: number,
+    sort: PackageSortFields,
+    order: SortOrder,
+  ): Promise<[Omit<IPackage, "_id">[], number]> {
+    //
+    const pkgs = await this.repository.aggregate([
+      {
+        $match: {
+          Id: {
+            $regex: new RegExp(`^${publisher}\\.`),
           },
-        })));
-
-      return results;
-    } catch (error) {
-      throw new Error(error);
-    }
-  }
-
-  // TODO: sort should not be string, it should be limited to fields on PackageModel (give or take a few)
-  public async findByName(name: string, take: number, skip: number, sort: string, order: number): Promise<[PackageModel[], number]> {
-    const [packages, total] = await this.findPackages({ Name: new RegExp(`.*${escapeRegex(name)}.*`, "i") }, take, skip, sort, order);
-
-    const packageBasicInfo = packages.map((f: any) => ({
-      ...f,
-      latest: {
-        Version: f.latest.Version,
-        Name: f.latest.Name,
-        Publisher: f.latest.Publisher,
-        Description: f.latest.Description,
-        Homepage: f.latest.Homepage,
-        IconUrl: f.latest.IconUrl,
+        },
       },
-    }));
-
-    return [packageBasicInfo, total];
-  }
-
-  public async findByOrg(org: string, take: number, skip: number): Promise<[PackageModel[], number]> {
-    const [packages, total] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\..*`, "i") }, take, skip);
-
-    const packageBasicInfo = packages.map((f: any) => ({
-      ...f,
-      latest: {
-        Version: f.latest.Version,
-        Name: f.latest.Name,
-        Publisher: f.latest.Publisher,
-        Description: f.latest.Description,
-        Homepage: f.latest.Homepage,
-        IconUrl: f.latest.IconUrl,
+      {
+        $facet: {
+          total: [
+            {
+              $count: "count",
+            },
+          ],
+          results: [
+            {
+              $sort: {
+                [sort]: order,
+              },
+            },
+            {
+              $skip: page * take,
+            },
+            {
+              $limit: take,
+            },
+            {
+              $unset: "_id",
+            },
+          ],
+        },
       },
-    }));
+      {
+        $unwind: "$total",
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            total: "$total.count",
+            results: "$results",
+          },
+        },
+      },
+    ]).next();
 
-    return [packageBasicInfo, total];
+    return [pkgs?.results ?? [], pkgs?.total ?? 0];
   }
 
-  public async findByPackage(org: string, pkg: string): Promise<PackageModel | null> {
-    const [packages] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, 1);
+  public async findSinglePackage(publisher: string, packageName: string): Promise<Omit<IPackage, "_id"> | undefined> {
+    const pkg = await this.repository.findOne({
+      Id: `${publisher}.${packageName}`,
+    });
 
-    return packages[0];
+    delete pkg?._id;
+
+    return pkg;
   }
 }
 

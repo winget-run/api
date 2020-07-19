@@ -1,6 +1,13 @@
 import { IBase } from "./base";
 // import {} from "./error";
-import { IPackage } from "./package";
+import { IManifest } from "./manifest";
+import { StatsResolution, IStats, IStatsSeries } from "./stats";
+import {
+  IPackage,
+  IPackageQueryOptions,
+  IPackageSearchOptions,
+  PackageSortFields,
+} from "./package";
 import {
   SortOrder,
   IBaseFilters,
@@ -22,6 +29,13 @@ import {
 export {
   IBase,
   IPackage,
+  IPackageQueryOptions,
+  IPackageSearchOptions,
+  PackageSortFields,
+  IManifest,
+  StatsResolution,
+  IStats,
+  IStatsSeries,
 
   SortOrder,
   IBaseFilters,
