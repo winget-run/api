@@ -12,7 +12,7 @@ const NGRAM_MIN = 2;
 
 // ye theres gonna be longer versions with random characters but those are technically
 // against spec and should break anything sooooo...
-const padSemver = (version: string): string => version.split(".").map(e => e.padEnd(5, "0")).join(".");
+const padSemver = (version: string): string => version.split(".").map(e => e.padStart(5, "0")).join(".");
 
 enum SortDirection {
   Ascending = 1,
