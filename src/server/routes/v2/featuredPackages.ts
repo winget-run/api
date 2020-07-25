@@ -1,42 +1,42 @@
 import { FastifyInstance } from "fastify";
 import { PackageService } from "../../../database";
 
+const updateFeaturedSchema = {
+  body: {
+    type: "object",
+    required: ["id", "banner", "logo"],
+    properties: {
+      id: {
+        type: "string",
+        minLength: 3,
+      },
+      banner: {
+        type: "string",
+        minLength: 5,
+      },
+      logo: {
+        type: "string",
+        minLength: 5,
+      },
+    },
+  },
+};
+
+const deleteFeaturedSchema = {
+  querystring: {
+    type: "object",
+    required: ["id"],
+    properties: {
+      id: {
+        type: "string",
+        minLength: 3,
+      },
+    },
+  },
+};
+
 export default async (fastify: FastifyInstance): Promise<void> => {
   const packageService = new PackageService();
-
-  const updateFeaturedSchema = {
-    body: {
-      type: "object",
-      required: ["id", "banner", "logo"],
-      properties: {
-        id: {
-          type: "string",
-          minLength: 1,
-        },
-        banner: {
-          type: "string",
-          minLength: 1,
-        },
-        logo: {
-          type: "string",
-          minLength: 1,
-        },
-      },
-    },
-  };
-
-  const deleteFeaturedSchema = {
-    querystring: {
-      type: "object",
-      required: ["id"],
-      properties: {
-        id: {
-          type: "string",
-          minLength: 1,
-        },
-      },
-    },
-  };
 
   //* get featured packages
   fastify.get("/", async () => {
@@ -44,7 +44,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       filters: { Featured: true },
     });
 
-    return featuredPackages;
+    return {
+      Packages: featuredPackages,
+    };
   });
 
   //* update featured package
@@ -58,10 +60,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       pkg.Logo = logo;
 
       await packageService.upsertPackage(pkg);
-      return res.code(200).send("updated featured package details");
+      return {
+        Message: "updated featured package details",
+      };
     }
 
-    return res.code(500).send("failed to update featured package details");
+    res.code(404);
+    throw new Error("failed to update featured package details, may not exist");
   });
 
   //* delete featured packaged (clear image, set to false)
@@ -75,9 +80,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       pkg.Logo = "";
 
       await packageService.upsertPackage(pkg);
-      return res.code(200).send("deleted featured package details");
+      return {
+        Message: "deleted featured package details",
+      };
     }
 
-    return res.code(500).send("failed to delete featured package details");
+    res.code(404);
+    throw new Error("failed to delete featured package details, package may not exist");
   });
 };
