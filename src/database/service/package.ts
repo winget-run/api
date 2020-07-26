@@ -42,11 +42,10 @@ class PackageService extends BaseService<PackageModel> {
         },
         // will probably always match the name first
         weights: {
-          "Search.Name": 15,
-          "Search.Publisher": 7,
-          "Search.Tags": 3,
-          // for clarity (default)
-          "Search.Description": 1,
+          "Search.Name": 20,
+          "Search.Publisher": 12,
+          "Search.Tags": 10,
+          "Search.Description": 4,
         },
       },
     ]);
