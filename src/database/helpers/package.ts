@@ -1,4 +1,9 @@
-import { DoubleMetaphone, NGrams } from "natural";
+import fs from "fs";
+import path from "path";
+
+import { DoubleMetaphone, NGrams, TfIdf } from "natural";
+
+import NodeCache from "node-cache";
 
 import { ManifestService, PackageService } from "../service";
 import {
@@ -8,7 +13,17 @@ import {
   IPackage,
 } from "../types";
 
+const {
+  NODE_PATH,
+} = process.env;
+
 const NGRAM_MIN = 2;
+
+const TFIDF_SAMPLE_CACHE_SEC = 30;
+const TFIDF_SAMPLE_NAME = "desc_sample";
+const TFIDF_SAMPLE_FP = path.join(NODE_PATH, "assets", `${TFIDF_SAMPLE_NAME}.json`);
+
+const cache = new NodeCache();
 
 // ye theres gonna be longer versions with random characters but those are technically
 // against spec and should break anything sooooo...
@@ -80,6 +95,49 @@ const generateNGrams = (word: string, min: number): string[] => {
   return ngrams.flat().map(e => e.reduce((a, c) => a + c, "")).filter((e, i, a) => i === a.findIndex(f => e === f)).map(e => e.padEnd(3, "_"));
 };
 
+const generateStartNGrams = (word: string, min: number): string[] => {
+  const ngrams = [];
+
+  const encodings = generateMetaphones(word);
+
+  for (let i = 0; i < encodings.length; i += 1) {
+    if (encodings[i].length === Math.max(1, min)) {
+      // TODO: if both encodings will always be the same length, remove this line
+      // see this would be redundant cos im already adding the encodings a couple lines up
+      // BUT idk if one encoding can be longer than other so ill leave it like this for now
+      ngrams.push(encodings[i]);
+    } else {
+      for (let j = min; j <= encodings[i].length; j += 1) {
+        ngrams.push(encodings[i].slice(0, j));
+      }
+    }
+  }
+
+  return ngrams.filter((e, i, a) => i === a.findIndex(f => e === f)).map(e => e.padEnd(3, "_"));
+};
+
+const extractKeywords = (text: string, max?: number): string[] => {
+  let tfidf: TfIdf;
+
+  const cachedTfidfData: string | undefined = cache.get(TFIDF_SAMPLE_NAME);
+  if (cachedTfidfData == null) {
+    const descSample: string[] = JSON.parse(fs.readFileSync(TFIDF_SAMPLE_FP).toString());
+
+    tfidf = new TfIdf();
+    descSample.forEach(e => tfidf.addDocument(e));
+
+    cache.set(TFIDF_SAMPLE_NAME, JSON.stringify(tfidf), TFIDF_SAMPLE_CACHE_SEC);
+  } else {
+    tfidf = new TfIdf(JSON.parse(cachedTfidfData));
+  }
+
+  tfidf.addDocument(text);
+  // it does exist, the types are just fucked as usual
+  const keywords = tfidf.listTerms((tfidf as any).documents.length - 1);
+
+  return keywords.slice(0, max ?? keywords.length).map(e => e.term);
+};
+
 // NOTE: pkg are any additional fields that should be updated or overwritten on the package doc
 const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Promise<void> => {
   const manifestService = new ManifestService();
@@ -128,6 +186,13 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
   // TODO: also adjust field weights again
   // const descriptionNGrams = latestManifest.Description == null ? [] : generateNGrams(latestManifest.Description, NGRAM_MIN);
 
+  const descriptionNGrams = latestManifest.Description == null
+    ? []
+    : extractKeywords(latestManifest.Description, 10)
+      .map(e => generateNGrams(e, 2))
+      .flat()
+      .filter((e, i, a) => i === a.findIndex(f => e === f));
+
   const newPkg = {
     Id: latestManifest.Id,
 
@@ -148,7 +213,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
       Name: generateNGrams(latestManifest.Name, NGRAM_MIN).join(" "),
       Publisher: generateNGrams(latestManifest.Publisher, NGRAM_MIN).join(" "),
       Tags: tagNGrams.length === 0 ? undefined : tagNGrams.join(" "),
-      // Description: descriptionNGrams.length === 0 ? undefined : descriptionNGrams.join(" "),
+      Description: descriptionNGrams.length === 0 ? undefined : descriptionNGrams.join(" "),
     },
 
     UpdatedAt: new Date(),
@@ -191,5 +256,7 @@ export {
   addOrUpdatePackage,
   removePackage,
   generateNGrams,
+  generateStartNGrams,
   generateMetaphones,
+  extractKeywords,
 };

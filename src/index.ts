@@ -1,8 +1,6 @@
 import "reflect-metadata";
 
-// eslint-disable-next-line import/first
 import { connect } from "./database";
-// eslint-disable-next-line import/first
 import { startServer } from "./server";
 
 // TODO: add a way to quickly deploy changes if only the /chart folder changes
