@@ -119,4 +119,43 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       "failed to delete featured package details, package may not exist",
     );
   });
+
+  //* delete all featured packages
+  fastify.delete("/", async (req, res) => {
+    const accessToken = req.headers["xxx-access-token"];
+    if (accessToken == null) {
+      res.status(401);
+      throw new Error("unauthorised");
+    }
+    if (accessToken !== API_ACCESS_TOKEN) {
+      res.status(403);
+      throw new Error("forbidden");
+    }
+
+    const featuredPackages = await packageService.find({
+      filters: { Featured: true },
+    });
+
+    if (featuredPackages.length === 0) {
+      res.status(404);
+      throw new Error("no featured packages found");
+    }
+
+    for (let i = 0; i < featuredPackages.length; i += 1) {
+      const pkg = featuredPackages[i];
+
+      console.log(pkg);
+
+      pkg.Featured = false;
+      pkg.Banner = "";
+      pkg.Logo = "";
+
+      // eslint-disable-next-line no-await-in-loop
+      await packageService.upsertPackage(pkg);
+    }
+
+    return {
+      Message: "removed all featured packages",
+    };
+  });
 };
