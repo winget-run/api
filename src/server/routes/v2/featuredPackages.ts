@@ -141,21 +141,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       throw new Error("no featured packages found");
     }
 
-    for (let i = 0; i < featuredPackages.length; i += 1) {
-      const pkg = featuredPackages[i];
-
-      console.log(pkg);
-
-      pkg.Featured = false;
-      pkg.Banner = "";
-      pkg.Logo = "";
-
-      // eslint-disable-next-line no-await-in-loop
-      await packageService.upsertPackage(pkg);
-    }
+    const removedPackages = await packageService.update({
+      filters: { Featured: true },
+      update: { Featured: false, Banner: "", Logo: "" },
+    });
 
     return {
-      Message: "removed all featured packages",
+      Message: `Removed ${removedPackages.modifiedCount} festured packages`,
     };
   });
 };
