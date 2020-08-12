@@ -132,19 +132,15 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       throw new Error("forbidden");
     }
 
-    const featuredPackages = await packageService.find({
-      filters: { Featured: true },
-    });
-
-    if (featuredPackages.length === 0) {
-      res.status(404);
-      throw new Error("no featured packages found");
-    }
-
     const removedPackages = await packageService.update({
       filters: { Featured: true },
       update: { Featured: false, Banner: "", Logo: "" },
     });
+
+    if (removedPackages.modifiedCount === 0) {
+      res.status(404);
+      throw new Error("no featured packages found");
+    }
 
     return {
       Message: `Removed ${removedPackages.modifiedCount} festured packages`,
