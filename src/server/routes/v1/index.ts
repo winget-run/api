@@ -197,11 +197,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     const yamls = await ghService.initialPackageImport();
-    // const manifestService = new ManifestService();
 
     await Promise.all(
-      // yamls.map((yaml) => manifestService.insertOne(yaml as any)),
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       yamls.map(yaml => addOrUpdatePackage(yaml as any)),
     );
@@ -225,21 +222,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const updateYamls = await ghService.updatePackages();
 
     if (updateYamls.length > 0) {
-      // const manifestService = new ManifestService();
-
       for (let i = 0; i < updateYamls.length; i += 1) {
         const pkg = updateYamls[i] as unknown as ManifestModel;
-        // eslint-disable-next-line no-await-in-loop
-        // const pkgExist = await manifestService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
-
-        // if (pkgExist !== undefined && pkgExist.Id !== null) {
-        //   const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
-        //   if (!equal) {
-        //     manifestService.updateOneById(pkgExist.uuid, pkg);
-        //   }
-        // } else {
-        //   manifestService.insertOne(pkg);
-        // }
 
         // eslint-disable-next-line no-await-in-loop
         await addOrUpdatePackage(pkg);
@@ -264,12 +248,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const manifests = request.body.manifests as string[];
 
     const yamls = await ghService.manualPackageImport(manifests);
-    // const manifestService = new ManifestService();
 
     await Promise.all(
       yamls.map(yaml => {
         const pkg = yaml as unknown as ManifestModel;
-        // manifestService.insertOne(pkg);
 
         return addOrUpdatePackage(pkg);
       }),
@@ -294,22 +276,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const updatedYamls = await ghService.manualPackageUpdate(since, until);
 
     if (updatedYamls.length > 0) {
-      // const manifestService = new ManifestService();
-
       for (let i = 0; i < updatedYamls.length; i += 1) {
         const pkg = updatedYamls[i] as unknown as ManifestModel;
-        // eslint-disable-next-line no-await-in-loop
-        // const pkgExist = await manifestService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
-
-        // if (pkgExist !== undefined && pkgExist.Id != null) {
-        //   const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
-
-        //   if (!equal) {
-        //     manifestService.updateOneById(pkgExist.uuid, pkg);
-        //   }
-        // } else {
-        //   manifestService.insertOne(pkg);
-        // }
 
         // eslint-disable-next-line no-await-in-loop
         await addOrUpdatePackage(pkg);
@@ -338,10 +306,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       return "error no yaml found";
     }
 
-    // const manifestService = new ManifestService();
     const pkg = yaml as unknown as ManifestModel;
 
-    // const result = await manifestService.insertOne(pkg);
     const result = { insertedCount: 1 };
     await addOrUpdatePackage(pkg);
 
@@ -360,23 +326,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       return new Error("forbidden");
     }
 
-    // const manifestService = new ManifestService();
-
     const { pkgId, iconUrl } = request.body;
-
-    // const pkgExist = await manifestService.findOne({ filters: { Id: pkgId as string } });
-
-    // if (pkgExist == null || iconUrl === "") {
-    //   return "package not found, or bad rquest";
-    // }
-
-    // // pkgExist.IconUrl = iconUrl;
-    // const result = await manifestService.update({
-    //   filters: { Id: pkgExist.Id },
-    //   update: {
-    //     // IconUrl: iconUrl,
-    //   },
-    // });
 
     // not optimised but here we are (will fix later, i rly will)
     const result = { modifiedCount: 1 };

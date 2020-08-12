@@ -36,7 +36,6 @@
     "fastify": "^2.15.1",
     "fastify-cors": "^3.0.3",
     "js-yaml": "^3.14.0",
-    "lodash": "^4.17.15",
     "moment": "^2.27.0",
     "mongodb": "^3.5.7",
     "natural": "^2.1.5",
