@@ -143,7 +143,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     return {
-      Message: `Removed ${removedPackages.modifiedCount} festured packages`,
+      Message: `Removed ${removedPackages.modifiedCount} featured packages`,
     };
   });
 };
