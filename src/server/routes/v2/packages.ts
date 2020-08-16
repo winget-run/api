@@ -177,7 +177,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const pkg = await packageService.findSinglePackage(publisher, packageName);
     if (pkg == null) {
       response.code(404);
-      return new Error("package not found");
+      throw new Error("package not found");
     }
 
     statsService.incrementAccessCount(`${publisher}.${packageName}`);

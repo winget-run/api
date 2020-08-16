@@ -1,15 +1,15 @@
 import { FastifyInstance } from "fastify";
 
 import { ratelimit } from "../../plugins";
+import ghService from "../../ghService/index";
+import { SortOrder } from "../../../database/types";
+import { validateApiToken } from "../../helpers";
 import {
   ManifestService,
   ManifestModel,
   addOrUpdatePackage,
   rebuildPackage,
 } from "../../../database";
-
-import ghService from "../../ghService/index";
-import { SortOrder } from "../../../database/types";
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -22,7 +22,6 @@ const DEFAULT_AUTOCOMPLETE_SIZE = 3;
 
 const {
   NODE_ENV,
-  API_ACCESS_TOKEN,
 } = process.env;
 
 // TODO: split this file up
@@ -185,17 +184,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: were cheking the header shit in a filthy way rn, make an auth middleware or something
   // *----------------- import package update --------------------
-  fastify.get("/ghs/import", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      return new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      return new Error("forbidden");
-    }
-
+  fastify.get("/ghs/import", { onRequest: validateApiToken }, async () => {
     const yamls = await ghService.initialPackageImport();
 
     await Promise.all(
@@ -208,17 +197,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: same as /ghs/import
   // *----------------- update package update --------------------
-  fastify.get("/ghs/update", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.get("/ghs/update", { onRequest: validateApiToken }, async () => {
     const updateYamls = await ghService.updatePackages();
 
     if (updateYamls.length > 0) {
@@ -234,17 +213,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- manual package import---------------------
-  fastify.post("/ghs/manualImport", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      return new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      return new Error("forbidden");
-    }
-
+  fastify.post("/ghs/manualImport", { onRequest: validateApiToken }, async request => {
     const manifests = request.body.manifests as string[];
 
     const yamls = await ghService.manualPackageImport(manifests);
@@ -261,17 +230,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- manual package update---------------------
-  fastify.get("/ghs/manualUpdate", { schema: manualPackageUpdateSchema }, async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.get("/ghs/manualUpdate", { schema: manualPackageUpdateSchema, onRequest: validateApiToken }, async request => {
     const { since, until } = request.query;
     const updatedYamls = await ghService.manualPackageUpdate(since, until);
 
@@ -288,17 +247,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- single package import ---------------------
-  fastify.post("/ghs/singleImport", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.post("/ghs/singleImport", { onRequest: validateApiToken }, async request => {
     const manifestPath = request.body.manifestPath as string;
     const yaml = await ghService.importSinglePackage(manifestPath);
 
@@ -315,17 +264,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- override package image ---------------------
-  fastify.post("/ghs/imageOverride", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      return new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      return new Error("forbidden");
-    }
-
+  fastify.post("/ghs/imageOverride", { onRequest: validateApiToken }, async request => {
     const { pkgId, iconUrl } = request.body;
 
     // not optimised but here we are (will fix later, i rly will)

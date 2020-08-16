@@ -28,7 +28,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const manifest = await manifestService.findManifestVersion(id, version);
     if (manifest == null) {
       response.code(404);
-      return new Error("manifest not found");
+      throw new Error("manifest not found");
     }
 
     return {
