@@ -9,6 +9,7 @@ import {
   ManifestModel,
   addOrUpdatePackage,
   rebuildPackage,
+  PackageService,
 } from "../../../database";
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
@@ -310,20 +311,20 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: make it so the filters field is not required
   fastify.get("/list", async () => {
-    const manifestService = new ManifestService();
+    const packageService = new PackageService();
 
-    // TODO: cant deselect _id, maybe add that opt to the service
-    const list = (await manifestService.find({
+    // TODO: cant deselect _id, maybe add that opt to the service (thats why theres a map at the end rn)
+    // Note: keeping the date field called 'updatedAt' instead of UpdatedAt for backwards compat
+    const list = (await packageService.find({
       filters: {},
       select: [
         "Id",
-        "updatedAt",
+        "UpdatedAt",
       ],
-    })).map(e => ({ Id: e.Id, updatedAt: e.updatedAt }));
+    })).map(e => ({ Id: e.Id, updatedAt: e.UpdatedAt }));
 
     return {
-      // remove dupes (diff version manifests)
-      list: list.filter((f, i, a) => a.findIndex(g => g.Id === f.Id) === i),
+      list,
     };
   });
 
