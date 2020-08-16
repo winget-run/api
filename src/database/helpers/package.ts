@@ -133,6 +133,7 @@ const extractKeywords = (text: string, max?: number): string[] => {
 
   tfidf.addDocument(text);
   // it does exist, the types are just fucked as usual
+  // TODO: can probs set to unknown and run some validation on this
   const keywords = tfidf.listTerms((tfidf as any).documents.length - 1);
 
   return keywords.slice(0, max ?? keywords.length).map(e => e.term);
@@ -152,7 +153,6 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
   });
 
   if (manifests.length === 0) {
-    // TODO: make Id unique in package model
     await packageService.deleteOne({
       Id: id,
     });

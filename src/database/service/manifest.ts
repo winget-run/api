@@ -41,7 +41,6 @@ class ManifestService extends BaseService<ManifestModel> {
   }
 
   // inserts a manifest into the database
-  // TODO: verify that Id-Version fields are unique (no need for additional checks here then)
   public async insertManifest(manifest: IBaseInsert<IManifest>): Promise<void> {
     await this.insertOne(manifest);
   }

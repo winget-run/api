@@ -1,5 +1,7 @@
 import { FastifyInstance } from "fastify";
+
 import { PackageService } from "../../../database";
+import { validateApiToken } from "../../helpers";
 
 const updateFeaturedSchema = {
   params: {
@@ -41,8 +43,6 @@ const deleteFeaturedSchema = {
   },
 };
 
-const { API_ACCESS_TOKEN } = process.env;
-
 export default async (fastify: FastifyInstance): Promise<void> => {
   const packageService = new PackageService();
 
@@ -58,17 +58,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   //* update featured package
-  fastify.post("/:id", { schema: updateFeaturedSchema }, async (req, res) => {
-    const accessToken = req.headers["xxx-access-token"];
-    if (accessToken == null) {
-      res.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      res.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.post("/:id", { schema: updateFeaturedSchema, onRequest: validateApiToken }, async (req, res) => {
     const { id } = req.params;
     const { Banner, Logo } = req.body;
     const pkg = await packageService.findOne({ filters: { Id: id } });
@@ -89,17 +79,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   //* delete featured packaged (clear image, set to false)
-  fastify.delete("/:id", { schema: deleteFeaturedSchema }, async (req, res) => {
-    const accessToken = req.headers["xxx-access-token"];
-    if (accessToken == null) {
-      res.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      res.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.delete("/:id", { schema: deleteFeaturedSchema, onRequest: validateApiToken }, async (req, res) => {
     const { id } = req.params;
     const pkg = await packageService.findOne({ filters: { Id: id } });
 
@@ -121,17 +101,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   //* delete all featured packages
-  fastify.delete("/", async (req, res) => {
-    const accessToken = req.headers["xxx-access-token"];
-    if (accessToken == null) {
-      res.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      res.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.delete("/", { onRequest: validateApiToken }, async (req, res) => {
     const removedPackages = await packageService.update({
       filters: { Featured: true },
       update: { Featured: false, Banner: "", Logo: "" },
