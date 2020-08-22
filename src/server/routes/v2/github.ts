@@ -25,6 +25,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
       batchIndex += batchSize;
     }
+
+    return {
+      Message: `imported ${yamls.length} packages at ${new Date().toISOString()}`,
+    };
   });
 
   // *----------------- manual package import---------------------
