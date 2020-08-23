@@ -36,9 +36,9 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const manifests = req.body.manifests as string[];
     const yamls = await ghService.manualPackageImport(manifests);
 
-    console.log(`yamls length - ${yamls.length} - yamsl lemgth`);
+    console.log(`yamls length - ${yamls.length}`);
 
-    const BATCH_SIZE = yamls.length % 2 === 0 ? 4 : 5;
+    const BATCH_SIZE = yamls.length % 2 === 0 ? 2 : 3;
     let batchIndex = 0;
 
     while (batchIndex < yamls.length) {
@@ -56,9 +56,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     }
 
     return {
-      Message: `imported ${
-        yamls.length
-      } packages at ${new Date().toISOString()}`,
+      Message: `imported ${yamls.length} packages at ${new Date().toISOString()}`,
     };
   });
 };
