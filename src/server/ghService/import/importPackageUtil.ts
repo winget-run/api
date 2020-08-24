@@ -22,10 +22,9 @@ const getManifestFolderPaths = async (): Promise<string[]> => {
     },
   ).then((res) => res.json());
 
-  const manifestFolderPaths = await (await manifestFolderList).map(
-    (x) => x.path,
-  );
+  const manifestFolderPaths = (await manifestFolderList).map((x) => x.path);
 
+  // TODO remove
   return manifestFolderPaths;
 };
 
@@ -33,13 +32,18 @@ const getPackageFolderPaths = async (): Promise<string[]> => {
   //! only use for inital bulk import
   const manifestFolderPaths = await getManifestFolderPaths();
 
-  const packageFolders: ManifestFolderList[] = await Promise.all(
-    manifestFolderPaths.map((e) => fetch(`${CONTENTS_BASE_URL}/${e}`, {
+  const packageFolders: ManifestFolderList[] = [];
+  for (let i = 0; i < manifestFolderPaths.length; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const packageFolder = await fetch(`${CONTENTS_BASE_URL}/${manifestFolderPaths[i]}`, {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
-    }).then((res) => res.json())),
-  );
+    }).then(res => res.json());
+
+    console.log(packageFolder);
+    packageFolders.push(packageFolder);
+  }
 
   const flatPackageFolderPaths: ManifestFolderList[] = packageFolders.flat(
     packageFolders.length,
@@ -65,23 +69,26 @@ const handleThreeLevelDeep = async (path: string): Promise<string> => {
 const getPackageDownloadUrls = async (): Promise<string[]> => {
   const packageFolderPaths = await getPackageFolderPaths();
 
-  const downloadUrlPaths: ManifestFolderList[] = await Promise.all(
-    packageFolderPaths.map((path) => fetch(`${CONTENTS_BASE_URL}/${path}`, {
+  const downloadUrlPaths: ManifestFolderList[] = [];
+  for (let i = 0; i < packageFolderPaths.length; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const downloadUrlPath = await fetch(`${CONTENTS_BASE_URL}/${packageFolderPaths[i]}`, {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
-    }).then((res) => res.json())),
-  );
+    }).then(res => res.json());
+
+    console.log(downloadUrlPath);
+    downloadUrlPaths.push(downloadUrlPath);
+  }
 
   const flatDownloadUrls: ManifestFolderList[] = downloadUrlPaths.flat(
     downloadUrlPaths.length,
   );
 
   const downloadUrls: string[] = [];
-
   // check if it has three levels
-  // eslint-disable-next-line no-plusplus
-  for (let i = 0; i < flatDownloadUrls.length; i++) {
+  for (let i = 0; i < flatDownloadUrls.length; i += 1) {
     if (flatDownloadUrls[i].download_url == null) {
       // eslint-disable-next-line no-await-in-loop
       const url: string = await handleThreeLevelDeep(flatDownloadUrls[i].path);
@@ -97,21 +104,19 @@ const getPackageDownloadUrls = async (): Promise<string[]> => {
 const getPackageYamls = async (): Promise<string[]> => {
   const downloadUrls = await (await getPackageDownloadUrls()).filter(x => x != null);
 
-  console.log(downloadUrls);
-
-  const packageYamls = Promise.all(
-    downloadUrls.map((url) => fetch(url, {
+  const packageYamls: string[] = [];
+  for (let i = 0; i < downloadUrls.length; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const packageYaml = await fetch(downloadUrls[i], {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
-    })
-      .then(res => res.arrayBuffer())
+    }).then(res => res.buffer())
       .then(buffer => {
         const utf8decoder = new TextDecoder("utf-8");
         const utf16decoder = new TextDecoder("utf-16");
 
         let res;
-
         try {
           const text = utf8decoder.decode(buffer);
           res = jsYaml.safeLoad(text);
@@ -121,10 +126,12 @@ const getPackageYamls = async (): Promise<string[]> => {
         }
 
         res.Version = String(res.Version);
-
         return res;
-      })),
-  );
+      });
+
+    console.log(packageYaml);
+    packageYamls.push(packageYaml);
+  }
 
   return packageYamls;
 };
