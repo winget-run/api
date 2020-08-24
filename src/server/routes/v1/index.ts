@@ -1,15 +1,16 @@
 import { FastifyInstance } from "fastify";
 
 import { ratelimit } from "../../plugins";
+import ghService from "../../ghService/index";
+import { SortOrder } from "../../../database/types";
+import { validateApiToken } from "../../helpers";
 import {
   ManifestService,
   ManifestModel,
   addOrUpdatePackage,
   rebuildPackage,
+  PackageService,
 } from "../../../database";
-
-import ghService from "../../ghService/index";
-import { SortOrder } from "../../../database/types";
 
 // NOTE: spec: https://github.com/microsoft/winget-cli/blob/master/doc/ManifestSpecv0.1.md
 // were more or less following it lel
@@ -22,7 +23,6 @@ const DEFAULT_AUTOCOMPLETE_SIZE = 3;
 
 const {
   NODE_ENV,
-  API_ACCESS_TOKEN,
 } = process.env;
 
 // TODO: split this file up
@@ -185,23 +185,10 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: were cheking the header shit in a filthy way rn, make an auth middleware or something
   // *----------------- import package update --------------------
-  fastify.get("/ghs/import", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      return new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      return new Error("forbidden");
-    }
-
+  fastify.get("/ghs/import", { onRequest: validateApiToken }, async () => {
     const yamls = await ghService.initialPackageImport();
-    // const manifestService = new ManifestService();
 
     await Promise.all(
-      // yamls.map((yaml) => manifestService.insertOne(yaml as any)),
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       yamls.map(yaml => addOrUpdatePackage(yaml as any)),
     );
@@ -211,35 +198,12 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: same as /ghs/import
   // *----------------- update package update --------------------
-  fastify.get("/ghs/update", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.get("/ghs/update", { onRequest: validateApiToken }, async () => {
     const updateYamls = await ghService.updatePackages();
 
     if (updateYamls.length > 0) {
-      // const manifestService = new ManifestService();
-
       for (let i = 0; i < updateYamls.length; i += 1) {
         const pkg = updateYamls[i] as unknown as ManifestModel;
-        // eslint-disable-next-line no-await-in-loop
-        // const pkgExist = await manifestService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
-
-        // if (pkgExist !== undefined && pkgExist.Id !== null) {
-        //   const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
-        //   if (!equal) {
-        //     manifestService.updateOneById(pkgExist.uuid, pkg);
-        //   }
-        // } else {
-        //   manifestService.insertOne(pkg);
-        // }
 
         // eslint-disable-next-line no-await-in-loop
         await addOrUpdatePackage(pkg);
@@ -250,26 +214,14 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- manual package import---------------------
-  fastify.post("/ghs/manualImport", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      return new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      return new Error("forbidden");
-    }
-
+  fastify.post("/ghs/manualImport", { onRequest: validateApiToken }, async request => {
     const manifests = request.body.manifests as string[];
 
     const yamls = await ghService.manualPackageImport(manifests);
-    // const manifestService = new ManifestService();
 
     await Promise.all(
       yamls.map(yaml => {
         const pkg = yaml as unknown as ManifestModel;
-        // manifestService.insertOne(pkg);
 
         return addOrUpdatePackage(pkg);
       }),
@@ -279,37 +231,13 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- manual package update---------------------
-  fastify.get("/ghs/manualUpdate", { schema: manualPackageUpdateSchema }, async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.get("/ghs/manualUpdate", { schema: manualPackageUpdateSchema, onRequest: validateApiToken }, async request => {
     const { since, until } = request.query;
     const updatedYamls = await ghService.manualPackageUpdate(since, until);
 
     if (updatedYamls.length > 0) {
-      // const manifestService = new ManifestService();
-
       for (let i = 0; i < updatedYamls.length; i += 1) {
         const pkg = updatedYamls[i] as unknown as ManifestModel;
-        // eslint-disable-next-line no-await-in-loop
-        // const pkgExist = await manifestService.findOne({ filters: { Id: pkg.Id, Version: pkg.Version } });
-
-        // if (pkgExist !== undefined && pkgExist.Id != null) {
-        //   const equal = _.isEqual(_.omit(pkgExist, ["_id", "createdAt", "updatedAt", "__v", "uuid"]), pkg);
-
-        //   if (!equal) {
-        //     manifestService.updateOneById(pkgExist.uuid, pkg);
-        //   }
-        // } else {
-        //   manifestService.insertOne(pkg);
-        // }
 
         // eslint-disable-next-line no-await-in-loop
         await addOrUpdatePackage(pkg);
@@ -320,17 +248,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- single package import ---------------------
-  fastify.post("/ghs/singleImport", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      throw new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      throw new Error("forbidden");
-    }
-
+  fastify.post("/ghs/singleImport", { onRequest: validateApiToken }, async request => {
     const manifestPath = request.body.manifestPath as string;
     const yaml = await ghService.importSinglePackage(manifestPath);
 
@@ -338,10 +256,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       return "error no yaml found";
     }
 
-    // const manifestService = new ManifestService();
     const pkg = yaml as unknown as ManifestModel;
 
-    // const result = await manifestService.insertOne(pkg);
     const result = { insertedCount: 1 };
     await addOrUpdatePackage(pkg);
 
@@ -349,34 +265,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   });
 
   // *----------------- override package image ---------------------
-  fastify.post("/ghs/imageOverride", async (request, reply) => {
-    const accessToken = request.headers["xxx-access-token"];
-    if (accessToken == null) {
-      reply.status(401);
-      return new Error("unauthorised");
-    }
-    if (accessToken !== API_ACCESS_TOKEN) {
-      reply.status(403);
-      return new Error("forbidden");
-    }
-
-    // const manifestService = new ManifestService();
-
+  fastify.post("/ghs/imageOverride", { onRequest: validateApiToken }, async request => {
     const { pkgId, iconUrl } = request.body;
-
-    // const pkgExist = await manifestService.findOne({ filters: { Id: pkgId as string } });
-
-    // if (pkgExist == null || iconUrl === "") {
-    //   return "package not found, or bad rquest";
-    // }
-
-    // // pkgExist.IconUrl = iconUrl;
-    // const result = await manifestService.update({
-    //   filters: { Id: pkgExist.Id },
-    //   update: {
-    //     // IconUrl: iconUrl,
-    //   },
-    // });
 
     // not optimised but here we are (will fix later, i rly will)
     const result = { modifiedCount: 1 };
@@ -421,20 +311,20 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // TODO: make it so the filters field is not required
   fastify.get("/list", async () => {
-    const manifestService = new ManifestService();
+    const packageService = new PackageService();
 
-    // TODO: cant deselect _id, maybe add that opt to the service
-    const list = (await manifestService.find({
+    // TODO: cant deselect _id, maybe add that opt to the service (thats why theres a map at the end rn)
+    // Note: keeping the date field called 'updatedAt' instead of UpdatedAt for backwards compat
+    const list = (await packageService.find({
       filters: {},
       select: [
         "Id",
-        "updatedAt",
+        "UpdatedAt",
       ],
-    })).map(e => ({ Id: e.Id, updatedAt: e.updatedAt }));
+    })).map(e => ({ Id: e.Id, updatedAt: e.UpdatedAt }));
 
     return {
-      // remove dupes (diff version manifests)
-      list: list.filter((f, i, a) => a.findIndex(g => g.Id === f.Id) === i),
+      list,
     };
   });
 
