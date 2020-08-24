@@ -154,7 +154,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  fastify.get("/:publisher", { schema: publisherPackageSchema }, async request => {
+  fastify.get("/:publisher", { schema: publisherPackageSchema }, async (request, response) => {
     const { publisher } = request.params;
     const {
       take = DEFAULT_PAGE_SIZE,
@@ -162,6 +162,11 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       sort = PackageSortFields.LatestName,
       order = SortOrder.ASCENDING,
     } = request.query;
+
+    if (publisher == null) {
+      response.code(404);
+      throw new Error("publisher not specified, please do that");
+    }
 
     const [pkgs, total] = await packageService.findByPublisher(publisher, take, page, sort, order);
 
@@ -173,6 +178,11 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   fastify.get("/:publisher/:packageName", { schema: singlePackageSchema }, async (request, response) => {
     const { publisher, packageName } = request.params;
+
+    if (publisher == null || packageName == null) {
+      response.code(404);
+      throw Error("publisher or package name not specified, please do that");
+    }
 
     const pkg = await packageService.findSinglePackage(publisher, packageName);
     if (pkg == null) {
