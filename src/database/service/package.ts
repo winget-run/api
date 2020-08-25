@@ -1,5 +1,7 @@
 import { getMongoRepository } from "typeorm";
 
+import fastify, { FastifyReply } from "fastify";
+import { ServerResponse } from "http";
 import BaseService from "./base";
 import PackageModel from "../model/package";
 import {
@@ -81,18 +83,21 @@ class PackageService extends BaseService<PackageModel> {
     sort: PackageSortFields | "SearchScore",
     order: SortOrder,
     searchOptions: IPackageSearchOptions,
+    response: fastify.FastifyReply<ServerResponse>,
   ): Promise<[Omit<IPackage & { SearchScore: number }, "_id">[], number]> {
     //
     const optionFields = Object.values(queryOptions).filter(e => e != null);
 
     // error if query AND another field is set (query only requirement)
     if (queryOptions.query != null && optionFields.length > 1) {
+      response.code(400);
       throw new Error("no other queryOptions should be set when 'query' is non-null");
     }
 
     // error if non-query fields are set and ensureContains is false, in which case
     // all non-query fields behave like a qquery and may be misleading
     if (queryOptions.query == null && optionFields.length >= 1 && searchOptions.ensureContains === false) {
+      response.code(400);
       throw new Error("non-query search parameters are redundant if ensureContains is false");
     }
 
@@ -280,7 +285,6 @@ class PackageService extends BaseService<PackageModel> {
     sort: PackageSortFields,
     order: SortOrder,
   ): Promise<[Omit<IPackage, "_id">[], number]> {
-    //
     const pkgs = await this.repository.aggregate([
       {
         $match: {

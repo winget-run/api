@@ -25,11 +25,6 @@ export default async (fastify: FastifyInstance): Promise<void> => {
   fastify.get("/:id/:version", { schema: manifestSchema }, async (request, response) => {
     const { id, version } = request.params;
 
-    if (id == null || version == null) {
-      response.code(404);
-      throw new Error("id  or version not specified, please do that");
-    }
-
     const manifest = await manifestService.findManifestVersion(id, version);
     if (manifest == null) {
       response.code(404);

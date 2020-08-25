@@ -117,7 +117,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // NOTE: query searches name > publisher > description
   // NOTE: tags are exact match, separated by ','
-  fastify.get("/", { schema: packageSchema }, async request => {
+  fastify.get("/", { schema: packageSchema }, async (request, response) => {
     const {
       query,
       name,
@@ -146,7 +146,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       publisher,
       description,
       ...(tags == null ? {} : { tags: tags.split(",") }),
-    }, take, page, sort, order, searchOptions);
+    }, take, page, sort, order, searchOptions, response);
 
     return {
       Packages: pkgs,
@@ -154,7 +154,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  fastify.get("/:publisher", { schema: publisherPackageSchema }, async (request, response) => {
+  fastify.get("/:publisher", { schema: publisherPackageSchema }, async (request) => {
     const { publisher } = request.params;
     const {
       take = DEFAULT_PAGE_SIZE,
@@ -162,11 +162,6 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       sort = PackageSortFields.LatestName,
       order = SortOrder.ASCENDING,
     } = request.query;
-
-    if (publisher == null) {
-      response.code(404);
-      throw new Error("publisher not specified, please do that");
-    }
 
     const [pkgs, total] = await packageService.findByPublisher(publisher, take, page, sort, order);
 
@@ -178,11 +173,6 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   fastify.get("/:publisher/:packageName", { schema: singlePackageSchema }, async (request, response) => {
     const { publisher, packageName } = request.params;
-
-    if (publisher == null || packageName == null) {
-      response.code(404);
-      throw Error("publisher or package name not specified, please do that");
-    }
 
     const pkg = await packageService.findSinglePackage(publisher, packageName);
     if (pkg == null) {
