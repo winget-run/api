@@ -42,15 +42,21 @@ const {
   MONGO_HOST,
   MONGO_DB,
   MONGO_CERT,
+  MONGO_CA,
 } = process.env;
 
 const connect = async (): Promise<void> => {
   const certPath = path.join(NODE_PATH, "mongo-cert.pem");
   fs.writeFileSync(certPath, MONGO_CERT);
 
+  const caPath = path.join(NODE_PATH, "mongo-ca.crt");
+  if (MONGO_CA != null) {
+    fs.writeFileSync(caPath, MONGO_CA);
+  }
+
   const envOptions = {
-    ...(NODE_ENV === "dev" ? { tlsAllowInvalidCertificates: true } : {}),
-    ...(NODE_ENV === "prod" ? { tlsCAFile: CA_PATH } : {}),
+    ...(NODE_ENV === "dev" ? { tlsCAFile: caPath } : {}),
+    ...(NODE_ENV === "prod" ? { tlsCAFile: MONGO_CA == null ? CA_PATH : caPath } : {}),
   };
 
   await createConnection({
