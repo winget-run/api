@@ -23,6 +23,7 @@ The following environment variabled are required to run the container:
 - **MONGO_HOST**: MongoDB host.
 - **MONGO_DB**: MongoDB database name.
 - **MONGO_CERT**: MongoDB x509 cert.
+- **MONGO_CA**: MongoDB CA cert.
 - **MONGO_CA_PATH**: Path to MongoDB CA cert.
 - **WEB_ADDRESS**: Host address for CORS.
 - **WEBSERVER_LOGGER**: Enable logger (boolean).
