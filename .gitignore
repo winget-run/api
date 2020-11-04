@@ -8,5 +8,6 @@ yarn-error.log
 secret.yaml
 *.pem
 *.pub
+*.crt
 temp
 dump

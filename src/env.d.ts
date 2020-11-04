@@ -6,6 +6,7 @@ declare namespace NodeJS {
     MONGO_HOST: string;
     MONGO_DB: string;
     MONGO_CERT: string;
+    MONGO_CA: string;
     MONGO_CA_PATH: string;
 
     WEB_ADDRESS: string;
