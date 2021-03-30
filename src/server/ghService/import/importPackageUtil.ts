@@ -5,41 +5,61 @@ import fetch from "node-fetch";
 import * as jsYaml from "js-yaml";
 import { ManifestFolderList } from "../types/import/manifestFolderListModel";
 
-
-const {
-  GITHUB_TOKEN,
-} = process.env;
+const { GITHUB_TOKEN } = process.env;
 
 const CONTENTS_BASE_URL = "https://api.github.com/repos/microsoft/winget-pkgs/contents";
 
-//! only call for initial import
-const getManifestFolderPaths = async (): Promise<string[]> => {
-  const manifestFolderList: Promise<ManifestFolderList[]> = await fetch(
-    `${CONTENTS_BASE_URL}/manifests`, {
+// TODO actually check it works
+const getMPaths = async (): Promise<string[]> => {
+  const mFolderPaths: Promise<ManifestFolderList[]> = await fetch(
+    `${CONTENTS_BASE_URL}/manifests`,
+    {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
     },
   ).then((res) => res.json());
 
+  const mpaths = (await mFolderPaths).map((x) => x.path);
+
+  return mpaths;
+};
+
+// TODO actually check it works
+const getManifestFolderPaths = async (): Promise<string[]> => {
+  const mPaths = await getMPaths();
+  const manifestFolderList: ManifestFolderList[] = [];
+
+  for (let i = 0; i < mPaths.length; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const manifestFolder = await fetch(`${CONTENTS_BASE_URL}/${mPaths[i]}`, {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+      },
+    }).then((res) => res.json());
+
+    manifestFolderList.push(manifestFolder);
+  }
+
   const manifestFolderPaths = (await manifestFolderList).map((x) => x.path);
 
-  // TODO remove
   return manifestFolderPaths;
 };
 
 const getPackageFolderPaths = async (): Promise<string[]> => {
-  //! only use for inital bulk import
   const manifestFolderPaths = await getManifestFolderPaths();
 
   const packageFolders: ManifestFolderList[] = [];
   for (let i = 0; i < manifestFolderPaths.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const packageFolder = await fetch(`${CONTENTS_BASE_URL}/${manifestFolderPaths[i]}`, {
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
+    const packageFolder = await fetch(
+      `${CONTENTS_BASE_URL}/${manifestFolderPaths[i]}`,
+      {
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+        },
       },
-    }).then(res => res.json());
+    ).then((res) => res.json());
 
     console.log(packageFolder);
     packageFolders.push(packageFolder);
@@ -55,11 +75,14 @@ const getPackageFolderPaths = async (): Promise<string[]> => {
 
 // for people like mongo who cant read the docs
 const handleThreeLevelDeep = async (path: string): Promise<string> => {
-  const downloadUrlPath: ManifestFolderList[] = await fetch(`${CONTENTS_BASE_URL}/${path}`, {
-    headers: {
-      Authorization: `token ${GITHUB_TOKEN}`,
+  const downloadUrlPath: ManifestFolderList[] = await fetch(
+    `${CONTENTS_BASE_URL}/${path}`,
+    {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+      },
     },
-  }).then(res => res.json());
+  ).then((res) => res.json());
 
   const downloadUrl = downloadUrlPath[0].download_url;
 
@@ -72,11 +95,14 @@ const getPackageDownloadUrls = async (): Promise<string[]> => {
   const downloadUrlPaths: ManifestFolderList[] = [];
   for (let i = 0; i < packageFolderPaths.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const downloadUrlPath = await fetch(`${CONTENTS_BASE_URL}/${packageFolderPaths[i]}`, {
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
+    const downloadUrlPath = await fetch(
+      `${CONTENTS_BASE_URL}/${packageFolderPaths[i]}`,
+      {
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+        },
       },
-    }).then(res => res.json());
+    ).then((res) => res.json());
 
     console.log(downloadUrlPath);
     downloadUrlPaths.push(downloadUrlPath);
@@ -102,7 +128,9 @@ const getPackageDownloadUrls = async (): Promise<string[]> => {
 };
 
 const getPackageYamls = async (): Promise<string[]> => {
-  const downloadUrls = await (await getPackageDownloadUrls()).filter(x => x != null);
+  const downloadUrls = await (await getPackageDownloadUrls()).filter(
+    (x) => x != null,
+  );
 
   const packageYamls: string[] = [];
   for (let i = 0; i < downloadUrls.length; i += 1) {
@@ -111,8 +139,9 @@ const getPackageYamls = async (): Promise<string[]> => {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
       },
-    }).then(res => res.buffer())
-      .then(buffer => {
+    })
+      .then((res) => res.buffer())
+      .then((buffer) => {
         const utf8decoder = new TextDecoder("utf-8");
         const utf16decoder = new TextDecoder("utf-16");
 

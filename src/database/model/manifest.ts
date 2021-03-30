@@ -6,19 +6,28 @@ import { IManifest } from "../types";
 @Entity()
 class ManifestModel extends BaseModel implements IManifest {
   @Column()
-  public Id!: string;
+  public PackageIdentifier!: string;
 
   @Column()
-  public Name!: string;
+  public PackageName!: string;
 
   @Column()
   public AppMoniker?: string;
 
   @Column()
-  public Version!: string;
+  public PackageVersion!: string;
+
+  @Column()
+  public PackageLocale?: string;
 
   @Column()
   public Publisher!: string;
+
+  @Column()
+  PublisherURL?: string;
+
+  @Column()
+  PrivacyURL?: string;
 
   @Column()
   public Channel?: string;
@@ -36,13 +45,22 @@ class ManifestModel extends BaseModel implements IManifest {
   public MinOSVersion?: string;
 
   @Column()
-  public Description?: string;
+  public ShortDescription?: string;
+
+  @Column()
+  PackageUrl?: string;
 
   @Column()
   public Homepage?: string;
 
   @Column()
-  public Tags?: string;
+  public Tags?: string[];
+
+  @Column()
+  ManifestType?: string;
+
+  @Column()
+  ManifestVersion?: string;
 
   @Column()
   public FileExtensions?: string;
@@ -74,9 +92,9 @@ class ManifestModel extends BaseModel implements IManifest {
   @Column()
   public Installers!: [
     {
-      Arch: string;
-      Url: string;
-      Sha256: string;
+      Architecture: string;
+      InstallerUrl: string;
+      InstallerSha256: string;
       SignatureSha256?: string;
       Language?: string;
       InstallerType?: string;

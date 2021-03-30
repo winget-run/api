@@ -134,6 +134,7 @@ const extractKeywords = (text: string, max?: number): string[] => {
   tfidf.addDocument(text);
   // it does exist, the types are just fucked as usual
   // TODO: can probs set to unknown and run some validation on this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const keywords = tfidf.listTerms((tfidf as any).documents.length - 1);
 
   return keywords.slice(0, max ?? keywords.length).map(e => e.term);
@@ -148,7 +149,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
   // single time (can get unweildy when more versions are added)
   const manifests = await manifestService.find({
     filters: {
-      Id: id,
+      PackageIdentifier: id,
     },
   });
 
@@ -165,16 +166,17 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
   // get fields from latest
   // get version list
   // get sortable version field
-  const versions = manifests.map(e => e.Version).sort(createSortSemver(SortDirection.Descending));
+  const versions = manifests.map(e => e.PackageVersion).sort(createSortSemver(SortDirection.Descending));
   const latestVersion = versions[0];
   // doing a manifests.length check a few lines up
-  const latestManifest = manifests.find(e => e.Version === latestVersion) as IManifest;
+  const latestManifest = manifests.find(e => e.PackageVersion === latestVersion) as IManifest;
   //
 
-  const tags = latestManifest.Tags == null ? [] : latestManifest.Tags.split(",").map(e => e.trim().toLowerCase());
+  const tags = latestManifest.Tags;
 
+  // TODO Lukasz, it be an array of strings now
   // search shite
-  const tagNGrams = tags.map(e => generateNGrams(e, NGRAM_MIN)).flat().filter((e, i, a) => i === a.findIndex(f => e === f));
+  // const tagNGrams = tags.map(e => generateNGrams(e, NGRAM_MIN)).flat().filter((e, i, a) => i === a.findIndex(f => e === f));
 
   // optimisations:
   // - remove short words
@@ -186,22 +188,22 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
   // TODO: also adjust field weights again
   // const descriptionNGrams = latestManifest.Description == null ? [] : generateNGrams(latestManifest.Description, NGRAM_MIN);
 
-  const descriptionNGrams = latestManifest.Description == null
+  const descriptionNGrams = latestManifest.ShortDescription == null
     ? []
-    : extractKeywords(latestManifest.Description, 10)
+    : extractKeywords(latestManifest.ShortDescription, 10)
       .map(e => generateNGrams(e, 2))
       .flat()
       .filter((e, i, a) => i === a.findIndex(f => e === f));
 
   const newPkg = {
-    Id: latestManifest.Id,
+    Id: latestManifest.PackageIdentifier,
 
     Versions: versions,
     Latest: {
-      Name: latestManifest.Name,
+      Name: latestManifest.PackageName,
       Publisher: latestManifest.Publisher,
       Tags: tags,
-      Description: latestManifest.Description,
+      Description: latestManifest.ShortDescription,
       Homepage: latestManifest.Homepage,
       License: latestManifest.License,
       LicenseUrl: latestManifest.LicenseUrl,
@@ -210,9 +212,10 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
     // Featured: false,
 
     Search: {
-      Name: generateNGrams(latestManifest.Name, NGRAM_MIN).join(" "),
+      Name: generateNGrams(latestManifest.PackageName, NGRAM_MIN).join(" "),
       Publisher: generateNGrams(latestManifest.Publisher, NGRAM_MIN).join(" "),
-      Tags: tagNGrams.length === 0 ? undefined : tagNGrams.join(" "),
+      // TODO Lukasz, it be an array of strings now
+      // Tags: tagNGrams.length === 0 ? undefined : tagNGrams.join(" "),
       Description: descriptionNGrams.length === 0 ? undefined : descriptionNGrams.join(" "),
     },
 
@@ -245,7 +248,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
 const addOrUpdatePackage = async (manifest: IBaseInsert<IManifest>, pkg: IBaseUpdate<IPackage> = {}): Promise<void> => {
   const manifestService = new ManifestService();
 
-  const { Id: id } = manifest;
+  const { PackageIdentifier: id } = manifest;
 
   if (id == null) {
     throw new Error("id not set");

@@ -1,19 +1,25 @@
 import { IBase } from "./base";
 
 interface IManifest extends IBase {
-  Id: string;
-  Name: string;
+  PackageIdentifier: string;
+  PackageName: string;
   AppMoniker?: string;
-  Version: string;
+  PackageVersion: string;
+  PackageLocale?: string;
   Publisher: string;
+  PublisherURL?: string;
+  PrivacyURL?: string;
   Channel?: string;
   Author?: string;
   License?: string;
   LicenseUrl?: string;
   MinOSVersion?: string;
-  Description?: string;
+  ShortDescription?: string;
+  PackageUrl?: string;
   Homepage?: string;
-  Tags?: string;
+  Tags?: string[];
+  ManifestType?: string;
+  ManifestVersion?: string;
   FileExtensions?: string;
   Protocols?: string;
   Commands?: string;
@@ -29,9 +35,9 @@ interface IManifest extends IBase {
   InstallLocation?: string;
   Installers: [
     {
-      Arch: string;
-      Url: string;
-      Sha256: string;
+      Architecture: string;
+      InstallerUrl: string;
+      InstallerSha256: string;
       SignatureSha256?: string;
       Language?: string;
       InstallerType?: string;

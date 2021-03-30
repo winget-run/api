@@ -30,8 +30,8 @@ class ManifestService extends BaseService<ManifestModel> {
   public async findManifestVersion(id: string, version: string): Promise<Omit<IManifest, "_id"> | undefined> {
     const manifest = await this.findOne({
       filters: {
-        Id: id,
-        Version: version,
+        PackageIdentifier: id,
+        PackageVersion: version,
       },
     });
 
@@ -49,7 +49,7 @@ class ManifestService extends BaseService<ManifestModel> {
   public async updateManifests(id: string, updateFields: IBaseUpdate<IManifest>): Promise<void> {
     await this.updateOne({
       filters: {
-        Id: id,
+        PackageIdentifier: id,
       },
       update: updateFields,
     });
@@ -59,8 +59,8 @@ class ManifestService extends BaseService<ManifestModel> {
   public async updateManifestVersion(id: string, version: string, updateFields: IBaseUpdate<IManifest>): Promise<void> {
     await this.updateOne({
       filters: {
-        Id: id,
-        Version: version,
+        PackageIdentifier: id,
+        PackageVersion: version,
       },
       update: updateFields,
     });
@@ -68,7 +68,7 @@ class ManifestService extends BaseService<ManifestModel> {
 
   // create a manifest if it doesnt already exist (matched id and version), otherwise update the existing one
   public async upsertManifest(manifest: IBaseInsert<IManifest>): Promise<void> {
-    const { Id: id, Version: version } = manifest;
+    const { PackageIdentifier: id, PackageVersion: version } = manifest;
 
     // shitty validation (until i do better validation) for something that can
     // potentially seriously fuck shit up
@@ -93,15 +93,15 @@ class ManifestService extends BaseService<ManifestModel> {
   // remove all manifests with the given id
   public async removeManifests(id: string): Promise<void> {
     await this.delete({
-      Id: id,
+      PackageIdentifier: id,
     });
   }
 
   // remove a single manifest that matched the given id and version
   public async removeManifestVersion(id: string, version: string): Promise<void> {
     await this.deleteOne({
-      Id: id,
-      Version: version,
+      PackageIdentifier: id,
+      PackageVersion: version,
     });
   }
 
@@ -337,14 +337,15 @@ class ManifestService extends BaseService<ManifestModel> {
       // TODO: remove the any (part of todos from above)
       const results = Promise.all(
         [
-          this.findPackages({ Name: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
+          this.findPackages({ PackageName: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
           this.findPackages({ Publisher: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
-          this.findPackages({ Description: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
+          this.findPackages({ ShortDescription: new RegExp(`.*${escapeRegex(query)}.*`, "i") }, take),
         ],
       ).then(e => e
         .flatMap(f => f[0])
         .slice(0, take)
-        .filter((f, i, a) => a.findIndex(g => g.Id === f.Id) === i)
+        .filter((f, i, a) => a.findIndex(g => g.PackageIdentifier === f.PackageIdentifier) === i)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((f: any) => ({
           ...f,
           latest: {
@@ -365,8 +366,9 @@ class ManifestService extends BaseService<ManifestModel> {
 
   // TODO: sort should not be string, it should be limited to fields on PackageModel (give or take a few)
   public async findByName(name: string, take: number, skip: number, sort: string, order: number): Promise<[ManifestModel[], number]> {
-    const [packages, total] = await this.findPackages({ Name: new RegExp(`.*${escapeRegex(name)}.*`, "i") }, take, skip, sort, order);
+    const [packages, total] = await this.findPackages({ PackageName: new RegExp(`.*${escapeRegex(name)}.*`, "i") }, take, skip, sort, order);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const packageBasicInfo = packages.map((f: any) => ({
       ...f,
       latest: {
@@ -383,8 +385,9 @@ class ManifestService extends BaseService<ManifestModel> {
   }
 
   public async findByOrg(org: string, take: number, skip: number): Promise<[ManifestModel[], number]> {
-    const [packages, total] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\..*`, "i") }, take, skip);
+    const [packages, total] = await this.findPackages({ PackageIdentifier: new RegExp(`^${escapeRegex(org)}\\..*`, "i") }, take, skip);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const packageBasicInfo = packages.map((f: any) => ({
       ...f,
       latest: {
@@ -401,7 +404,7 @@ class ManifestService extends BaseService<ManifestModel> {
   }
 
   public async findByPackage(org: string, pkg: string): Promise<ManifestModel | null> {
-    const [packages] = await this.findPackages({ Id: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, 1);
+    const [packages] = await this.findPackages({ PackageIdentifier: new RegExp(`^${escapeRegex(org)}\\.${escapeRegex(pkg)}$`, "i") }, 1);
 
     return packages[0];
   }

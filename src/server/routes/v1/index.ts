@@ -261,7 +261,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     const result = { insertedCount: 1 };
     await addOrUpdatePackage(pkg);
 
-    return `insertted ${result.insertedCount} with ID - ${pkg.Id}`;
+    return `insertted ${result.insertedCount} with ID - ${pkg.PackageIdentifier}`;
   });
 
   // *----------------- override package image ---------------------

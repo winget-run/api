@@ -20,7 +20,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
         // eslint-disable-next-line no-loop-func
         batch.map(async x => {
           const pkg = x as unknown as ManifestModel;
-          console.log(`${pkg.Id} / ${pkg.Version} - ${batchIndex}`);
+          console.log(`${pkg.PackageIdentifier} / ${pkg.PackageVersion} - ${batchIndex}`);
 
           await addOrUpdatePackage(pkg);
         }),
@@ -57,7 +57,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
           // eslint-disable-next-line no-loop-func
           batch.map(async x => {
             const pkg = x as unknown as ManifestModel;
-            console.log(`${pkg.Id} / ${pkg.Version} - ${batchIndex}`);
+            console.log(`${pkg.PackageIdentifier} / ${pkg.PackageVersion} - ${batchIndex}`);
 
             await addOrUpdatePackage(pkg);
           }),
