@@ -176,7 +176,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
 
   // TODO Lukasz, it be an array of strings now
   // search shite
-  // const tagNGrams = tags.map(e => generateNGrams(e, NGRAM_MIN)).flat().filter((e, i, a) => i === a.findIndex(f => e === f));
+  const tagNGrams = tags?.map(e => generateNGrams(e, NGRAM_MIN)).flat().filter((e, i, a) => i === a.findIndex(f => e === f));
 
   // optimisations:
   // - remove short words
@@ -214,8 +214,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
     Search: {
       Name: generateNGrams(latestManifest.PackageName, NGRAM_MIN).join(" "),
       Publisher: generateNGrams(latestManifest.Publisher, NGRAM_MIN).join(" "),
-      // TODO Lukasz, it be an array of strings now
-      // Tags: tagNGrams.length === 0 ? undefined : tagNGrams.join(" "),
+      Tags: tagNGrams?.length === 0 ? undefined : tagNGrams?.join(" "),
       Description: descriptionNGrams.length === 0 ? undefined : descriptionNGrams.join(" "),
     },
 
