@@ -33,7 +33,11 @@ const getCommitsMasterTimeRange = async (): Promise<string[]> => {
     },
   ).then((res) => res.json());
 
-  const commitUrls = (await masterCommits).map((commit) => commit.url);
+  const commitUrls = (await masterCommits)
+    .filter((x => !x.commit.message.toLowerCase().includes("deleting")))
+    .map((y) => y.url);
+
+  console.log(commitUrls);
 
   return commitUrls;
 };
