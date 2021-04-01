@@ -25,7 +25,7 @@ const getCommitsMasterTimeRange = async (): Promise<string[]> => {
 
 
   const masterCommits: Promise<MasterCommit[]> = await fetch(
-    `${COMMITS_BASE_URL}&&since=${since}&&until=${until}&&page=1&&page_size=1000`,
+    `${COMMITS_BASE_URL}&&since=${since}&&until=${until}&&page=1&&page_size=100`,
     {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,

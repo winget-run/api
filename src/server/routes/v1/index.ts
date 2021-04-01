@@ -232,8 +232,8 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // *----------------- manual package update---------------------
   fastify.get("/ghs/manualUpdate", { schema: manualPackageUpdateSchema, onRequest: validateApiToken }, async request => {
-    const { since, until } = request.query;
-    const updatedYamls = await ghService.manualPackageUpdate(since, until);
+    const { since, until, page } = request.query;
+    const updatedYamls = await ghService.manualPackageUpdate(since, until, page);
 
     if (updatedYamls.length > 0) {
       for (let i = 0; i < updatedYamls.length; i += 1) {

@@ -21,8 +21,8 @@ const updatePackages = async (): Promise<string[]> => {
   return updatePackageYamls;
 };
 
-const manualPackageUpdate = async (since: Date, until: Date): Promise<string[]> => {
-  const updatedPackageYamls = await manualPackageUpdateUtil.getUpdatedPackageYamls(since, until);
+const manualPackageUpdate = async (since: Date, until: Date, page: number): Promise<string[]> => {
+  const updatedPackageYamls = await manualPackageUpdateUtil.getUpdatedPackageYamls(since, until, page);
 
   return updatedPackageYamls;
 };

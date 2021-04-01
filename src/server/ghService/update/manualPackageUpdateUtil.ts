@@ -14,9 +14,9 @@ const {
   GITHUB_TOKEN,
 } = process.env;
 
-const getCommitsMasterTimeRange = async (since: Date, until: Date): Promise<string[]> => {
+const getCommitsMasterTimeRange = async (since: Date, until: Date, page: number): Promise<string[]> => {
   const masterCommits: Promise<MasterCommit[]> = await fetch(
-    `${COMMITS_BASE_URL}&&since=${since}&&until=${until}&&page=1&&page_size=1000`,
+    `${COMMITS_BASE_URL}&&since=${since}&&until=${until}&&page=${page}&&page_size=100`,
     {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
@@ -33,8 +33,8 @@ const getCommitsMasterTimeRange = async (since: Date, until: Date): Promise<stri
   return commitUrls;
 };
 
-const getUpdatedFileFath = async (since: Date, until: Date): Promise<string[]> => {
-  const commitUrls = await getCommitsMasterTimeRange(since, until);
+const getUpdatedFileFath = async (since: Date, until: Date, page: number): Promise<string[]> => {
+  const commitUrls = await getCommitsMasterTimeRange(since, until, page);
 
   const commitDetails: CommitDetails[] = await Promise.all(
     commitUrls.map((commitUrl) => fetch(commitUrl, {
@@ -53,8 +53,8 @@ const getUpdatedFileFath = async (since: Date, until: Date): Promise<string[]> =
   return filePaths;
 };
 
-const getPackageDownloadUrls = async (since: Date, until: Date): Promise<string[]> => {
-  const updatedFilePaths = await (await getUpdatedFileFath(since, until)).filter((x) => x.startsWith("manifests/"));
+const getPackageDownloadUrls = async (since: Date, until: Date, page: number): Promise<string[]> => {
+  const updatedFilePaths = await (await getUpdatedFileFath(since, until, page)).filter((x) => x.startsWith("manifests/"));
 
   const packageFileDetails: PackageFileDetails[] = await Promise.all(
     updatedFilePaths.map((path) => fetch(`${CONTENTS_BASE_URL}/${path}`, {
@@ -69,8 +69,8 @@ const getPackageDownloadUrls = async (since: Date, until: Date): Promise<string[
   return downloadUrls;
 };
 
-const getUpdatedPackageYamls = async (since: Date, until: Date): Promise<string[]> => {
-  const downloadUrls = await (await getPackageDownloadUrls(since, until)).filter(
+const getUpdatedPackageYamls = async (since: Date, until: Date, page: number): Promise<string[]> => {
+  const downloadUrls = await (await getPackageDownloadUrls(since, until, page)).filter(
     (url) => url != null,
   );
 
