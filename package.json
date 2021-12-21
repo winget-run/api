@@ -26,9 +26,6 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@types/encoding-japanese": "^1.0.15",
-    "@types/lodash": "^4.14.153",
-    "@types/moment": "^2.13.0",
     "bson": "^4.0.4",
     "cross-env": "^7.0.2",
     "dotenv": "^8.2.0",
@@ -41,11 +38,14 @@
     "natural": "^2.1.5",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.0",
-    "reflect-metadata": "^0.1.13",
     "typeorm": "^0.2.25",
-    "uuid-mongodb": "^2.3.0"
+    "uuid-mongodb": "^2.3.0",
+    "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
+    "@types/encoding-japanese": "^1.0.15",
+    "@types/lodash": "^4.14.153",
+    "@types/moment": "^2.13.0",
     "@types/bson": "^4.0.2",
     "@types/dotenv": "^8.2.0",
     "@types/jest": "^25.2.3",
