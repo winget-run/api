@@ -207,7 +207,7 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
       LicenseUrl: latestManifest.LicenseUrl,
     },
 
-    Featured: false,
+    // Featured: false,
 
     Search: {
       Name: generateNGrams(latestManifest.Name, NGRAM_MIN).join(" "),
@@ -222,7 +222,20 @@ const rebuildPackage = async (id: string, pkg: IBaseUpdate<IPackage> = {}): Prom
     ...pkg,
   };
 
-  packageService.upsertPackage(newPkg);
+  packageService.repository.updateOne(
+    {
+      Id: id,
+    },
+    {
+      $set: newPkg,
+      $setOnInsert: {
+        Featured: false,
+      },
+    },
+    {
+      upsert: true,
+    },
+  );
 };
 
 // NOTE: additions are made synchronously as data integrity is more important than speed here
