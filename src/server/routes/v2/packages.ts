@@ -117,7 +117,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
 
   // NOTE: query searches name > publisher > description
   // NOTE: tags are exact match, separated by ','
-  fastify.get("/", { schema: packageSchema }, async request => {
+  fastify.get("/", { schema: packageSchema }, async (request, response) => {
     const {
       query,
       name,
@@ -146,7 +146,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
       publisher,
       description,
       ...(tags == null ? {} : { tags: tags.split(",") }),
-    }, take, page, sort, order, searchOptions);
+    }, take, page, sort, order, searchOptions, response);
 
     return {
       Packages: pkgs,
@@ -154,7 +154,7 @@ export default async (fastify: FastifyInstance): Promise<void> => {
     };
   });
 
-  fastify.get("/:publisher", { schema: publisherPackageSchema }, async request => {
+  fastify.get("/:publisher", { schema: publisherPackageSchema }, async (request) => {
     const { publisher } = request.params;
     const {
       take = DEFAULT_PAGE_SIZE,
