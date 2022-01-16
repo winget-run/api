@@ -14,10 +14,6 @@ declare namespace NodeJS {
     WEBSERVER_PORT: string;
     WEBSERVER_ADDRESS: string;
 
-    GITHUB_TOKEN: string;
-    CRON_FREQUENCY: string;
-    UPDATE_FREQUENCY_MINUTES: string;
-
     API_ACCESS_TOKEN: string;
   }
 }
