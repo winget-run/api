@@ -1,6 +1,6 @@
 # Winget.run API
 
-The REST API behind [winget.run](https://winget.run), allowing users to search, discover, and install winget packages effortlessly without any third-party programs. Package manifests are periodically fetched from the GitHub API to prevent hitting ratelimits.
+The REST API behind [winget.run](https://winget.run), allowing users to search, discover, and install winget packages effortlessly without any third-party programs.
 
 If you wish to use our API, please take a look at [our docs](https://docs.winget.run). All other non-documentation info will be provided in this readme.
 
@@ -28,9 +28,6 @@ The following environment variabled are required to run the container:
 - **WEBSERVER_LOGGER**: Enable logger (boolean).
 - **WEBSERVER_PORT**: Port to run the API on.
 - **WEBSERVER_ADDRESS**: Address to run the server on (eg. 0.0.0.0).
-- **GITHUB_TOKEN**: GitHub API token.
-- **CRON_FREQUENCY**: Cron notation for UPDATE_FREQUENCY_MINUTES (below).
-- **UPDATE_FREQUENCY_MINUTES**: How often new packages are fetched from GitHub in minutes.
 - **API_ACCESS_TOKEN**: Token that will be required for accessing protected routes.
 
 > NOTE: The cron job is not included in this app and needs to be set up seperately.
