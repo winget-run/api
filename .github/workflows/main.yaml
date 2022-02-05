@@ -1,102 +1,89 @@
-# Note: were not currently using branches/envs properly, we will if this project takes off
-
-name: CI/CD
+name: Check and deploy
 
 on:
   pull_request:
     branches:
       - master
-      - develop
   push:
     branches:
       - master
-      - develop
-      - release/*
-      - hotfix/*
-      - bug/*
-      - feature/*
+
+env:
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_ORG: ${{ github.event.organization.name }}
+  GITHUB_REPO: ${{ github.event.repository.name }}
+  GITHUB_BRANCH: ${{ GITHUB_REF##*/ }}
+  GITHUB_EVENT: ${{ github.event_name }}
 
 jobs:
-  test:
-    name: Run tests
+  check:
+    name: General code checks
     runs-on: ubuntu-latest
-    container:
-      image: node
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: lts/*
+          cache: pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2.0.1
+        with:
+          version: 6
       - name: Install dependencies
-        uses: borales/actions-yarn@v2.0.0
-        with:
-          cmd: install
-      - name: Lint
-        uses: borales/actions-yarn@v2.0.0
-        with:
-          cmd: lint
-      - name: Test
-        uses: borales/actions-yarn@v2.0.0
-        with:
-          cmd: test
-      - name: Build
-        uses: borales/actions-yarn@v2.0.0
-        with:
-          cmd: build
+        run: pnpm install
+      - name: Ensure correct formatting
+        run: format:check
+      - name: Ensure correct linting
+        run: lint:check
+      - name: Ensure tests pass requirements
+        run: test:check
+      - name: Ensure code builds
+        run: build:check
   build:
-    name: Build docker container
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')
-    needs: test
+    name: Build container image
+    if: $GITHUB_EVENT == push
+    needs: check
     runs-on: ubuntu-latest
+    env:
+      CONTAINER_REGISTRY: ghcr.io
+      IMAGE_NAME: $CONTAINER_REGISTRY/$GITHUB_ORG/$GITHUB_REPO
     steps:
-      - uses: actions/checkout@v1
-      - name: Login to github docker
-        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }} docker.pkg.github.com
-      - name: Build docker image
-        run: docker build -t ${{ github.event.repository.name }} .
-      - name: Docker tag
-        run: |
-          docker tag ${{ github.event.repository.name }} docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:${{ github.sha }}
-
-          if [ ${{ github.ref }} == 'refs/heads/master' ]
-          then
-            docker tag ${{ github.event.repository.name }} docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:master
-          elif [ ${{ github.ref }} == 'refs/heads/develop' ]
-          then
-            docker tag ${{ github.event.repository.name }} docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:develop
-          elif [ ${{ github.ref }} == 'refs/heads/release/*' ]
-          then
-            docker tag ${{ github.event.repository.name }} docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:release
-          fi
-
-          docker tag ${{ github.event.repository.name }} docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:latest
-      - name: Push docker image
-        run: |
-          docker push docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:${{ github.sha }}
-
-          if [ ${{ github.ref }} == 'refs/heads/master' ]
-          then
-            docker push docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:master
-          elif [ ${{ github.ref }} == 'refs/heads/develop' ]
-          then
-            docker push docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:develop
-          elif [ ${{ github.ref }} == 'refs/heads/release/*' ]
-          then
-            docker push docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:release
-          fi
-
-          docker push docker.pkg.github.com/winget-run/${{ github.event.repository.name }}/${{ github.event.repository.name }}:latest
+      - uses: actions/checkout@v2
+      - name: Login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: $CONTAINER_REGISTRY
+          username: ${{ secrets.CONTAINER_REGISTRY_USER }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
+      - name: Build and push image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: $IMAGE_NAME:$GITHUB_SHA,$IMAGE_NAME:$GITHUB_BRANCH,$IMAGE_NAME:latest
   deploy:
     name: Deploy to kubernetes
-    if: github.ref == 'refs/heads/develop'
+    if: $GITHUB_EVENT == push
     needs: build
     runs-on: ubuntu-latest
+    env:
+      K8S_CLUSTER_NAME: k8s-bandsy
+      K8S_CONFIG_PATH: $GITHUB_WORKSPACE/.kubeconfig
+      HELM_RELEASE_NAMESPACE: winget-run-dev
+      HELM_RELEASE_NAME: $GITHUB_REPO
+      HELM_CHART_DIR: ./chart
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Save kubeconfig
-        uses: digitalocean/action-doctl@master
+        uses: digitalocean/action-doctl@v2
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         with:
-          args: kubernetes cluster kubeconfig show k8s-bandsy > $GITHUB_WORKSPACE/.kubeconfig
+          args: kubernetes cluster kubeconfig show $K8S_CLUSTER_NAME > $K8S_CONFIG_PATH
       - name: Install helm
-        run: curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh
+        run: |-
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
       - name: Update deployment
-        run: helm upgrade ${{ github.event.repository.name }} ./chart --install --atomic --namespace winget-run-dev --kubeconfig=$GITHUB_WORKSPACE/.kubeconfig --set-string sha=${{ github.sha }}
+        run: helm upgrade $HELM_RELEASE_NAME $HELM_CHART_DIR --install --atomic --namespace $HELM_RELEASE_NAMESPACE --kubeconfig=$K8S_CONFIG_PATH --set-string sha=$GITHUB_SHA
