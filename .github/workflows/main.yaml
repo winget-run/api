@@ -43,7 +43,7 @@ jobs:
         run: build:check
   build:
     name: Build container image
-    if: ${{ env.GITHUB_EVENT == push }}
+    if: ${{ env.GITHUB_EVENT == 'push' }}
     needs: check
     runs-on: ubuntu-latest
     env:
@@ -64,7 +64,7 @@ jobs:
           tags: $IMAGE_NAME:$GITHUB_SHA,$IMAGE_NAME:$GITHUB_BRANCH,$IMAGE_NAME:latest
   deploy:
     name: Deploy to kubernetes
-    if: ${{ env.GITHUB_EVENT == push }}
+    if: ${{ env.GITHUB_EVENT == 'push' }}
     needs: build
     runs-on: ubuntu-latest
     env:
