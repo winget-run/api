@@ -21,7 +21,7 @@ env:
 
   # deployment
   K8S_CLUSTER: k8s-bandsy
-  K8S_CONFIG_PATH: ${{ env.GITHUB_WORKSPACE }}/.kubeconfig
+  K8S_CONFIG_PATH: /tmp/.kubeconfig
   HELM_RELEASE_NAMESPACE: winget-run-dev
   HELM_RELEASE: ${{ github.event.repository.name }}
   HELM_CHART_DIR: ./chart
