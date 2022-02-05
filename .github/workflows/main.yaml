@@ -17,7 +17,7 @@ env:
 
   # docker
   CONTAINER_REGISTRY: ghcr.io
-  CONTAINER_IMAGE: ${{ github.repository_owner }}/${{ github.event.repository.name }}
+  CONTAINER_IMAGE: ${{ github.event.organization.login }}/${{ github.event.repository.name }}/${{ github.event.repository.name }}
 
   # deployment
   K8S_CLUSTER: k8s-bandsy
