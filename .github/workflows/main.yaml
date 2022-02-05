@@ -12,6 +12,7 @@ env:
   GITHUB_SHA: ${{ github.sha }}
   GITHUB_ORG: ${{ github.event.organization.name }}
   GITHUB_REPO: ${{ github.event.repository.name }}
+  GITHUB_REF: ${{ github.ref }}
   GITHUB_BRANCH: ${{ GITHUB_REF##*/ }}
   GITHUB_EVENT: ${{ github.event_name }}
 
