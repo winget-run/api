@@ -9,10 +9,22 @@ on:
       - master
 
 env:
+  # general
   GITHUB_SHA: ${{ github.sha }}
   GITHUB_ORG: ${{ github.event.organization.name }}
   GITHUB_REPO: ${{ github.event.repository.name }}
   GITHUB_BRANCH: ${{ github.ref_name }}
+
+  # docker
+  CONTAINER_REGISTRY: ghcr.io
+  CONTAINER_IMAGE: ${{ env.GITHUB_ORG }}/${{ env.GITHUB_REPO }}
+
+  # deployment
+  K8S_CLUSTER: k8s-bandsy
+  K8S_CONFIG_PATH: ${{ env.GITHUB_WORKSPACE }}/.kubeconfig
+  HELM_RELEASE_NAMESPACE: winget-run-dev
+  HELM_RELEASE: ${{ github.event.repository.name }}
+  HELM_CHART_DIR: ./chart
 
 jobs:
   check:
@@ -43,9 +55,6 @@ jobs:
     if: github.event_name == 'push'
     needs: check
     runs-on: ubuntu-latest
-    env:
-      CONTAINER_REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ env.CONTAINER_REGISTRY }}/${{ env.GITHUB_ORG }}/${{ env.GITHUB_REPO }}
     steps:
       - uses: actions/checkout@v2
       - name: Login to github container registry
@@ -58,18 +67,12 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ env.IMAGE_NAME }}:${{ env.GITHUB_SHA }},${{ env.IMAGE_NAME }}:${{ env.GITHUB_BRANCH }},${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.CONTAINER_IMAGE }}:${{ env.GITHUB_SHA }},${{ env.CONTAINER_IMAGE }}:${{ env.GITHUB_BRANCH }},${{ env.CONTAINER_IMAGE }}:latest
   deploy:
     name: Deploy to kubernetes
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
-    env:
-      K8S_CLUSTER_NAME: k8s-bandsy
-      K8S_CONFIG_PATH: ${{ env.GITHUB_WORKSPACE }}/.kubeconfig
-      HELM_RELEASE_NAMESPACE: winget-run-dev
-      HELM_RELEASE_NAME: ${{ env.GITHUB_REPO }}
-      HELM_CHART_DIR: ./chart
     steps:
       - uses: actions/checkout@v2
       - name: Save kubeconfig
@@ -77,11 +80,11 @@ jobs:
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         with:
-          args: kubernetes cluster kubeconfig show ${{ env.K8S_CLUSTER_NAME }} > ${{ env.K8S_CONFIG_PATH }}
+          args: kubernetes cluster kubeconfig show ${{ env.K8S_CLUSTER }} > ${{ env.K8S_CONFIG_PATH }}
       - name: Install helm
         run: |-
           curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
           chmod 700 get_helm.sh
           ./get_helm.sh
       - name: Update deployment
-        run: helm upgrade ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_DIR }} --install --atomic --namespace ${{ env.HELM_RELEASE_NAMESPACE }} --kubeconfig=${{ env.K8S_CONFIG_PATH }} --set-string sha=${{ env.GITHUB_SHA }}
+        run: helm upgrade ${{ env.HELM_RELEASE }} ${{ env.HELM_CHART_DIR }} --install --atomic --namespace ${{ env.HELM_RELEASE_NAMESPACE }} --kubeconfig=${{ env.K8S_CONFIG_PATH }} --set-string sha=${{ env.GITHUB_SHA }}
