@@ -21,7 +21,6 @@ env:
 
   # deployment
   K8S_CLUSTER: k8s-bandsy
-  K8S_CONFIG_PATH: /tmp/.kubeconfig
   HELM_RELEASE_NAMESPACE: winget-run-dev
   HELM_RELEASE: ${{ github.event.repository.name }}
   HELM_CHART_DIR: ./chart
@@ -73,16 +72,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Save kubeconfig
+      - name: Install doctl
         uses: digitalocean/action-doctl@v2
-        env:
-          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         with:
-          args: kubernetes cluster kubeconfig show ${{ env.K8S_CLUSTER }} > ${{ env.K8S_CONFIG_PATH }}
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Save kubeconfig
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ env.K8S_CLUSTER }}
       - name: Install helm
         run: |-
           curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
           chmod 700 get_helm.sh
           ./get_helm.sh
       - name: Update deployment
-        run: helm upgrade ${{ env.HELM_RELEASE }} ${{ env.HELM_CHART_DIR }} --install --atomic --namespace ${{ env.HELM_RELEASE_NAMESPACE }} --kubeconfig=${{ env.K8S_CONFIG_PATH }} --set-string sha=${{ env.GITHUB_SHA }}
+        run: helm upgrade ${{ env.HELM_RELEASE }} ${{ env.HELM_CHART_DIR }} --install --atomic --namespace ${{ env.HELM_RELEASE_NAMESPACE }} --set-string sha=${{ env.GITHUB_SHA }}
