@@ -40,7 +40,7 @@
     "mongodb": "^3.5.7",
     "natural": "^2.1.5",
     "node-cache": "^5.1.2",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.7",
     "reflect-metadata": "^0.1.13",
     "typeorm": "^0.2.25",
     "uuid-mongodb": "^2.3.0"
