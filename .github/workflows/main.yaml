@@ -12,8 +12,7 @@ env:
   GITHUB_SHA: ${{ github.sha }}
   GITHUB_ORG: ${{ github.event.organization.name }}
   GITHUB_REPO: ${{ github.event.repository.name }}
-  GITHUB_BRANCH: ${{ github.ref##*/ }}
-  # GITHUB_BRANCH: ${{ env.GITHUB_REF##*/ }}
+  GITHUB_BRANCH: ${{ github.ref_name }}
 
 jobs:
   check:
