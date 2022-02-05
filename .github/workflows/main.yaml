@@ -17,7 +17,7 @@ env:
 
   # docker
   CONTAINER_REGISTRY: ghcr.io
-  CONTAINER_IMAGE: ${{ github.event.organization.login }}/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+  CONTAINER_IMAGE: ${{ github.event.repository.name }}
 
   # deployment
   K8S_CLUSTER: k8s-bandsy
@@ -57,17 +57,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Login to github container registry
-        uses: docker/login-action@v1
+      - name: Build and push image to registry
+        uses: mr-smithers-excellent/docker-build-push@v5
         with:
+          image: ${{ env.CONTAINER_IMAGE }}
+          tags: ${{ env.GITHUB_SHA }},${{ env.GITHUB_BRANCH }},latest
+          githubOrg: ${{ env.GITHUB_ORG }}
           registry: ${{ env.CONTAINER_REGISTRY }}
-          username: ${{ secrets.CONTAINER_REGISTRY_USER }}
-          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
-      - name: Build and push image
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: ${{ env.CONTAINER_IMAGE }}:${{ env.GITHUB_SHA }},${{ env.CONTAINER_IMAGE }}:${{ env.GITHUB_BRANCH }},${{ env.CONTAINER_IMAGE }}:latest
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
   deploy:
     name: Deploy to kubernetes
     if: github.event_name == 'push'
