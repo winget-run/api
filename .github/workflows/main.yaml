@@ -32,13 +32,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Ensure correct formatting
-        run: format:check
+        run: pnpm format:check
       - name: Ensure correct linting
-        run: lint:check
+        run: pnpm lint:check
       - name: Ensure tests pass requirements
-        run: test:check
+        run: pnpm test:check
       - name: Ensure code builds
-        run: build:check
+        run: pnpm build:check
   build:
     name: Build container image
     if: github.event_name == 'push'
