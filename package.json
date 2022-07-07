@@ -41,7 +41,7 @@
     "fastify": "^2.15.1",
     "fastify-cors": "^3.0.3",
     "js-yaml": "^3.14.0",
-    "moment": "^2.27.0",
+    "moment": "^2.29.4",
     "mongodb": "^3.5.7",
     "natural": "^2.1.5",
     "node-cache": "^5.1.2",
