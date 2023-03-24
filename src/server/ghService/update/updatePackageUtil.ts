@@ -38,7 +38,7 @@ const getCommitsMasterTimeRange = async (): Promise<string[]> => {
   return commitUrls;
 };
 
-const getUpdatedFileFath = async (): Promise<string[]> => {
+const getUpdatedFilePaths = async (): Promise<string[]> => {
   const commitUrls = await getCommitsMasterTimeRange();
 
   const commitDetails: CommitDetails[] = await Promise.all(
@@ -59,7 +59,7 @@ const getUpdatedFileFath = async (): Promise<string[]> => {
 };
 
 const getPackageDownloadUrls = async (): Promise<string[]> => {
-  const updatedFilePaths = await (await getUpdatedFileFath()).filter((x) => x.startsWith("manifests/"));
+  const updatedFilePaths = await (await getUpdatedFilePaths()).filter((x) => x.startsWith("manifests/"));
 
   const packageFileDetails: PackageFileDetails[] = await Promise.all(
     updatedFilePaths.map((path) => fetch(`${CONTENTS_BASE_URL}/${path}`, {
